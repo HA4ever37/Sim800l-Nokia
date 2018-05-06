@@ -1,4 +1,6 @@
 This is Sim800
       by:
   HA4ever ^_*
-اهلا وسهلا
+  Arduino is
+  fun but not
+  always easy
