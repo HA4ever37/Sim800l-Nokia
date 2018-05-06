@@ -103,7 +103,7 @@ void loop() {
     else if (menuPos == 2) {
       while (!Serial1Con)
         connectGPRS();
-      String s = openURL("m.uploadedit.com/bbtc/1525147298160.txt");
+      String s = openURL("https://raw.githubusercontent.com/HA4ever37/Sim800l/master/Sim800.txt");
       if (s == "ERROR" || s == "")  {
         display.println(F("Something \nwent wrong!"));
         display.display();
@@ -112,17 +112,14 @@ void loop() {
       }
       else {
         //Serial.print(F("Result: "));
-        int last = 0;
-        if (s.lastIndexOf("OK") != -1)
-          last = s.length() - s.lastIndexOf("OK");
-        last = s.length() - last;
-        s.substring(s.indexOf("\r"), last);
+        s = s.substring(s.indexOf("\r")+2, s.lastIndexOf("OK"));
         display.clearDisplay();
         digitalWrite(lcdBL, LOW);
-        for (int i = s.indexOf("\r"); i < last; i++) {
-          //Serial.print(s.charAt(i));
+        for (int i = 0; i < s.length(); i++) {
+          Serial.print(s.charAt(i));
           display.print(s.charAt(i));
         }
+        s="";
         display.display();
         digitalWrite(lcdBL, HIGH);
         delay(500);
@@ -174,8 +171,11 @@ String openURL(String string) {
   display.clearDisplay();
   Serial1.write("AT+HTTPPARA =\"REDIR\",1\r");
   Serial1.readString();
+  Serial1.write("AT+HTTPSSL=1 \r");
+  Serial1.readString();
   //Serial.println(Serial1.readString());
   Serial1.write("AT+HTTPACTION=0\r");
+  Serial1.readString();
   if (Serial1.readString().indexOf(",200,") != -1) {
     display.println(F("Request \failed!"));
     display.display();
