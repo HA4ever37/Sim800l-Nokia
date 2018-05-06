@@ -103,7 +103,7 @@ void loop() {
     else if (menuPos == 2) {
       while (!Serial1Con)
         connectGPRS();
-      String s = openURL("https://raw.githubusercontent.com/HA4ever37/Sim800l/master/Sim800.txt");
+      String s = openURL("raw.githubusercontent.com/HA4ever37/Sim800l/master/Sim800.txt");
       if (s == "ERROR" || s == "")  {
         display.println(F("Something \nwent wrong!"));
         display.display();
@@ -125,6 +125,8 @@ void loop() {
         delay(500);
         digitalWrite(lcdBL, LOW);
         while (!isButtonDown(btnEnt) && !isButtonDown(btnUp) && !isButtonDown(btnDwn));
+        display.clearDisplay();
+        display.display();
       }
     }
     else if (menuPos == 3)
