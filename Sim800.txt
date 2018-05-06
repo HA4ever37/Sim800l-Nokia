@@ -1,6 +1,6 @@
 This is Sim800
       by:
   HA4ever ^_*
-  Arduino is
-  fun but not
-  always easy
+Arduino is
+fun but not
+always easy
