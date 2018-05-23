@@ -1,10 +1,6 @@
 This is Sim800
       by:
-<<<<<<< HEAD
- HA4ever ^_*
-=======
   HA4ever ^_*
 Arduino is
 fun but not
 always easy
->>>>>>> 1a36b3bbc0f456b9444df012bb07cb63a9b85dd3
