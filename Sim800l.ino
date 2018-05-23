@@ -420,6 +420,7 @@ void ledRx( boolean on)
     pinMode( LED_BUILTIN_RX, INPUT);
     //    bitClear( DDRB, 0);
   }
+<<<<<<< HEAD
 }
 
 void checkLight(){
@@ -428,3 +429,6 @@ void checkLight(){
       lights = true;
     }
 }
+=======
+}
+>>>>>>> 1a36b3bbc0f456b9444df012bb07cb63a9b85dd3
