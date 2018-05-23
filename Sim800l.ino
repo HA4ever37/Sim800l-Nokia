@@ -63,10 +63,7 @@ void setup() {
 void loop() {
   currentMillis = millis();
   if (isButtonDown(btnDwn) == true) {
-    if (isItSleep && !lights) {
-      digitalWrite(lcdBL, LOW);
-      lights = true;
-    }
+    checkLight();
     if (menuPos < MENU_LENGTH - 1) {
       menuPos++;
       if (menuPos > 3) {
@@ -78,9 +75,7 @@ void loop() {
     startMillis = currentMillis;
   }
   if (isButtonDown(btnUp) == true) {
-    if (isItSleep && !lights) {
-      digitalWrite(lcdBL, LOW);
-    }
+    checkLight();
     if (menuPos > 0) {
       menuPos--;
       if (menuStartAt > 0) {
@@ -92,10 +87,7 @@ void loop() {
     startMillis = currentMillis;
   }
   if (isButtonDown(btnEnt) == true) {
-    if (isItSleep && !lights) {
-      digitalWrite(lcdBL, LOW);
-      lights = true;
-    }
+    checkLight();
     if (menuPos == 0)
       connectGPRS();
     else if (menuPos == 1)
@@ -103,7 +95,7 @@ void loop() {
     else if (menuPos == 2) {
       while (!Serial1Con)
         connectGPRS();
-      String s = openURL("m.uploadedit.com/bbtc/1525147298160.txt");
+      String s = openURL("raw.githubusercontent.com/HA4ever37/Sim800l/master/Sim800.txt");
       if (s == "ERROR" || s == "")  {
         display.println(F("Something \nwent wrong!"));
         display.display();
@@ -112,22 +104,21 @@ void loop() {
       }
       else {
         //Serial.print(F("Result: "));
-        int last = 0;
-        if (s.lastIndexOf("OK") != -1)
-          last = s.length() - s.lastIndexOf("OK");
-        last = s.length() - last;
-        s.substring(s.indexOf("\r"), last);
+        s = s.substring(s.indexOf("\r")+2, s.lastIndexOf("OK"));
         display.clearDisplay();
         digitalWrite(lcdBL, LOW);
-        for (int i = s.indexOf("\r"); i < last; i++) {
-          //Serial.print(s.charAt(i));
+        for (int i = 0; i < s.length(); i++) {
+          Serial.print(s.charAt(i));
           display.print(s.charAt(i));
         }
+        s="";
         display.display();
         digitalWrite(lcdBL, HIGH);
         delay(500);
         digitalWrite(lcdBL, LOW);
         while (!isButtonDown(btnEnt) && !isButtonDown(btnUp) && !isButtonDown(btnDwn));
+        display.clearDisplay();
+        display.display();
       }
     }
     else if (menuPos == 3)
@@ -174,8 +165,11 @@ String openURL(String string) {
   display.clearDisplay();
   Serial1.write("AT+HTTPPARA =\"REDIR\",1\r");
   Serial1.readString();
+  Serial1.write("AT+HTTPSSL=1 \r");
+  Serial1.readString();
   //Serial.println(Serial1.readString());
   Serial1.write("AT+HTTPACTION=0\r");
+  Serial1.readString();
   if (Serial1.readString().indexOf(",200,") != -1) {
     display.println(F("Request \failed!"));
     display.display();
@@ -245,7 +239,7 @@ void connectGPRS() {
       display.println(F("Connecting to \naccess point.."));
       display.display();
       Serial1.write("AT+SAPBR=1,1\r");
-      delay(1000);
+      delay(2000);
       if (Serial1.readString().indexOf("OK") != -1) {
         display.print(F("Connected!"));
         Serial1Con = true;
@@ -426,4 +420,11 @@ void ledRx( boolean on)
     pinMode( LED_BUILTIN_RX, INPUT);
     //    bitClear( DDRB, 0);
   }
+}
+
+void checkLight(){
+  if (isItSleep && !lights) {
+      digitalWrite(lcdBL, LOW);
+      lights = true;
+    }
 }
