@@ -18,7 +18,7 @@ Adafruit_PCD8544 display = Adafruit_PCD8544(15, 16, 9, 8, 4);
 
 unsigned long startMillis, currentMillis;
 const unsigned long period = 30000;  //the value is a number of milliseconds
-bool Serial1Con, isItSleep, lights;
+bool GPRSCon, isItSleep, lights;
 byte menuPos = 0;
 byte menuScreen = 0;
 byte markerPos = 0;
@@ -55,7 +55,7 @@ void setup() {
   }
   Serial1.write("AT+SAPBR=2,1\r");
   if (Serial1.readString().indexOf("0.0.0.0") == -1)
-    Serial1Con = true;
+    GPRSCon = true;
   showMenu();
   startMillis = millis();
 }
@@ -93,7 +93,7 @@ void loop() {
     else if (menuPos == 1)
       disConnectGPRS();
     else if (menuPos == 2) {
-      while (!Serial1Con)
+      while (!GPRSCon)
         connectGPRS();
       String s = openURL("raw.githubusercontent.com/HA4ever37/Sim800l/master/Sim800.txt");
       if (s == "ERROR" || s == "")  {
@@ -134,7 +134,7 @@ void loop() {
 
   if (currentMillis - startMillis >= period) {
     isItSleep = true;
-    Serial1Con = false;
+    GPRSCon = false;
     lights = false;
     digitalWrite(lcdBL, HIGH);
     digitalWrite(resetPin, LOW);
@@ -206,7 +206,7 @@ void resetAll() {
   delay(100);
   digitalWrite(resetPin, HIGH);
   delay(10000);
-  Serial1Con = false;
+  GPRSCon = false;
 }
 
 void connectGPRS() {
@@ -214,7 +214,7 @@ void connectGPRS() {
     wakeUp();
     isItSleep = false;
   }
-  if (Serial1Con) {
+  if (GPRSCon) {
     display.clearDisplay();
     display.println(F("Already \nconnected!"));
     display.display();
@@ -242,7 +242,7 @@ void connectGPRS() {
       delay(2000);
       if (Serial1.readString().indexOf("OK") != -1) {
         display.print(F("Connected!"));
-        Serial1Con = true;
+        GPRSCon = true;
       }
       else {
         display.print(F("Failed to \nconnect!"));
@@ -261,7 +261,7 @@ void connectGPRS() {
 }
 
 void disConnectGPRS() {
-  if (!Serial1Con) {
+  if (!GPRSCon) {
     display.clearDisplay();
     display.println(F("Already \ndisconnected!"));
     display.display();
@@ -280,12 +280,12 @@ void disConnectGPRS() {
     display.print(Serial1.readString());
     display.display();
     //Serial1.readString();
-    Serial1Con = false;
+    GPRSCon = false;
   }
 }
 
 void turnOff() {
-  Serial1Con = false;
+  GPRSCon = false;
   display.clearDisplay();
   digitalWrite(lcdBL, HIGH);
   Serial1.write("AT+CPOWD=0\r");
@@ -381,44 +381,24 @@ void pinInterrupt(void) {
   detachInterrupt(0);
 }
 
-void ledTx( boolean on)
-{
-  if ( on)
-  {
-    // led on. The led is connected to VCC. Make pin low to turn led on.
+void ledTx( boolean on) {
+  if (on)  {
     pinMode( LED_BUILTIN_TX, OUTPUT);    // pin as output.
     digitalWrite( LED_BUILTIN_TX, LOW);  // pin low
-
-    // These two lines will do the same:
-    //    bitSet( DDRD, 5);
-    //    bitClear( PORTD, 5);
   }
-  else
-  {
-    // led off
-    // turn it off, by setting it as input, so the serial activity can't turn it on.
-    // If the internal pullup resistor is enabled or not, that does not matter,
-    // since the led it connected to VCC.
+  else {
     pinMode( LED_BUILTIN_TX, INPUT);
-
-    // This line will do the same:
-    //    bitClear( DDRD, 5);        // set pin as input
   }
 }
 
 void ledRx( boolean on)
 {
-  if ( on)
-  {
+  if (on) {
     pinMode( LED_BUILTIN_RX, OUTPUT);
     digitalWrite( LED_BUILTIN_RX, LOW);
-    //    bitSet( DDRB, 0);
-    //    bitClear( PORTB, 0);
   }
-  else
-  {
+  else {
     pinMode( LED_BUILTIN_RX, INPUT);
-    //    bitClear( DDRB, 0);
   }
 }
 
