@@ -23,7 +23,7 @@ byte menuPos = 0;
 byte menuScreen = 0;
 byte markerPos = 0;
 byte menuStartAt = 0;
-String menu[6] = {"Connect", "Disconnect", "Request", "Sleep 24s", "Reset", "Light",};
+String menu[6] = {"Connect", "Disconnect", "Request", "Sleep 24s", "Reset", "Light"};
 
 void setup() {
   pinMode(btnUp, INPUT_PULLUP);
@@ -104,14 +104,14 @@ void loop() {
       }
       else {
         //Serial.print(F("Result: "));
-        s = s.substring(s.indexOf("\r")+2, s.lastIndexOf("OK"));
+        s = s.substring(s.indexOf("\r") + 2, s.lastIndexOf("OK"));
         display.clearDisplay();
         digitalWrite(lcdBL, LOW);
         for (int i = 0; i < s.length(); i++) {
           Serial.print(s.charAt(i));
           display.print(s.charAt(i));
         }
-        s="";
+        s = "";
         display.display();
         digitalWrite(lcdBL, HIGH);
         delay(500);
@@ -420,15 +420,11 @@ void ledRx( boolean on)
     pinMode( LED_BUILTIN_RX, INPUT);
     //    bitClear( DDRB, 0);
   }
-<<<<<<< HEAD
 }
 
-void checkLight(){
+void checkLight() {
   if (isItSleep && !lights) {
-      digitalWrite(lcdBL, LOW);
-      lights = true;
-    }
+    digitalWrite(lcdBL, LOW);
+    lights = true;
+  }
 }
-=======
-}
->>>>>>> 1a36b3bbc0f456b9444df012bb07cb63a9b85dd3
