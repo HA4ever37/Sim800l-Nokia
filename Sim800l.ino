@@ -18,7 +18,7 @@ Adafruit_PCD8544 display = Adafruit_PCD8544(15, 16, 9, 8, 4);
 
 unsigned long startMillis, currentMillis;
 const unsigned long period = 30000;  //the value is a number of milliseconds
-bool GPRSCon, isItSleep, lights;
+bool GPRSCon, isItSleep;
 byte menuPos = 0;
 byte menuScreen = 0;
 byte markerPos = 0;
@@ -37,7 +37,6 @@ void setup() {
   digitalWrite(TXLED, HIGH);
   digitalWrite(resetPin, HIGH);
   digitalWrite(lcdBL, LOW);
-  lights = true;
   display.begin();
   display.setContrast(50);
   display.setRotation(2);
@@ -63,7 +62,6 @@ void setup() {
 void loop() {
   currentMillis = millis();
   if (isButtonDown(btnDwn) == true) {
-    checkLight();
     if (menuPos < MENU_LENGTH - 1) {
       menuPos++;
       if (menuPos > 3) {
@@ -75,7 +73,6 @@ void loop() {
     startMillis = currentMillis;
   }
   if (isButtonDown(btnUp) == true) {
-    checkLight();
     if (menuPos > 0) {
       menuPos--;
       if (menuStartAt > 0) {
@@ -87,7 +84,6 @@ void loop() {
     startMillis = currentMillis;
   }
   if (isButtonDown(btnEnt) == true) {
-    checkLight();
     if (menuPos == 0)
       connectGPRS();
     else if (menuPos == 1)
@@ -135,7 +131,8 @@ void loop() {
   if (currentMillis - startMillis >= period) {
     isItSleep = true;
     GPRSCon = false;
-    lights = false;
+    display.clearDisplay();
+    display.display();
     digitalWrite(lcdBL, HIGH);
     digitalWrite(resetPin, LOW);
     attachInterrupt(digitalPinToInterrupt(btnEnt), pinInterrupt, RISING);
@@ -143,6 +140,8 @@ void loop() {
     sleep_enable();
     sleep_mode();
     sleep_disable();
+    showMenu();
+    digitalWrite(lcdBL, LOW);
     startMillis = currentMillis;
   }
 }
@@ -297,6 +296,7 @@ void turnOff() {
   for (byte i = 0; i < 4; i++)
     myWatchdogEnable (0b100001);  // 8 seconds
   //  myWatchdogEnable (0b100000);  // 4 seconds
+  digitalWrite(lcdBL, LOW);
   startMillis = currentMillis;
 }
 
@@ -399,12 +399,5 @@ void ledRx( boolean on)
   }
   else {
     pinMode( LED_BUILTIN_RX, INPUT);
-  }
-}
-
-void checkLight() {
-  if (isItSleep && !lights) {
-    digitalWrite(lcdBL, LOW);
-    lights = true;
   }
 }
