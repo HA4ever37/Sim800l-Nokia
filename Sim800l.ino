@@ -89,10 +89,8 @@ void loop() {
     else if (menuPos == 1)
       disConnectGPRS();
     else if (menuPos == 2) {
-      while (!GPRSCon)
-        connectGPRS();
       String s = openURL("raw.githubusercontent.com/HA4ever37/Sim800l/master/Sim800.txt");
-      if (s == "ERROR" || s == "")  {
+      if (s == "ERROR" || s == "" || s == "OK\r")  {
         display.println(F("Something \nwent wrong!"));
         display.display();
         delay(1000);
@@ -131,15 +129,17 @@ void loop() {
   if (currentMillis - startMillis >= period) {
     isItSleep = true;
     GPRSCon = false;
+    digitalWrite(lcdBL, HIGH);
     display.clearDisplay();
     display.display();
-    digitalWrite(lcdBL, HIGH);
+    display.command( PCD8544_FUNCTIONSET | PCD8544_POWERDOWN);
     digitalWrite(resetPin, LOW);
     attachInterrupt(digitalPinToInterrupt(btnEnt), pinInterrupt, RISING);
     set_sleep_mode(SLEEP_MODE_PWR_DOWN);
     sleep_enable();
     sleep_mode();
     sleep_disable();
+    display.begin();
     showMenu();
     digitalWrite(lcdBL, LOW);
     startMillis = currentMillis;
@@ -147,6 +147,8 @@ void loop() {
 }
 
 String openURL(String string) {
+  while (!GPRSCon)
+    connectGPRS();
   Serial1.write("AT+HTTPINIT\r");
   display.clearDisplay();
   display.print(F("HTTP \nIntialization"));
@@ -268,7 +270,8 @@ void disConnectGPRS() {
   }
   else {
     display.clearDisplay();
-    display.println(F("Disconnect \nGPRS.."));
+    display.print(F("Disconnect \nGPRS.."));
+    display.display();
     Serial1.write("AT+SAPBR=0,1\r");
     display.print(Serial1.readString());
     display.display();
@@ -285,18 +288,18 @@ void disConnectGPRS() {
 
 void turnOff() {
   GPRSCon = false;
-  display.clearDisplay();
   digitalWrite(lcdBL, HIGH);
   Serial1.write("AT+CPOWD=0\r");
   Serial1.readString();
   display.clearDisplay();
   display.display();
-  //display.command( PCD8544_FUNCTIONSET | PCD8544_POWERDOWN);
-  //Serial1.readString();
+  display.command( PCD8544_FUNCTIONSET | PCD8544_POWERDOWN);
   for (byte i = 0; i < 4; i++)
     myWatchdogEnable (0b100001);  // 8 seconds
   //  myWatchdogEnable (0b100000);  // 4 seconds
+  display.begin();
   digitalWrite(lcdBL, LOW);
+  wakeUp();
   startMillis = currentMillis;
 }
 
