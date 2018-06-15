@@ -33,6 +33,7 @@ void setup() {
   pinMode(resetPin, OUTPUT);
   pinMode(RXLED, OUTPUT);
   pinMode(TXLED, OUTPUT);
+  digitalWrite(resetPin, HIGH);
   digitalWrite(RXLED, HIGH);
   digitalWrite(TXLED, HIGH);
   digitalWrite(resetPin, HIGH);
@@ -89,7 +90,7 @@ void loop() {
     else if (menuPos == 1)
       disConnectGPRS();
     else if (menuPos == 2) {
-      String s = openURL("raw.githubusercontent.com/HA4ever37/Sim800l/master/Sim800.txt");
+      String s = openURL("raw.githubusercontent.com/HA4ever37/Sim800l/master/Sim800.txt"); // Change URL if your text file link
       if (s == "ERROR" || s == "" || s == "OK\r")  {
         display.println(F("Something \nwent wrong!"));
         display.display();
@@ -234,7 +235,7 @@ void connectGPRS() {
       Serial1.readString();
       //Serial1.readString();
       //Serial.println(F("Setting up \naccess point.."));
-      Serial1.write("AT+SAPBR=3,1,\"APN\",\"freedompop.foggmobile.com\"\r");
+      Serial1.write("AT+SAPBR=3,1,\"APN\",\"freedompop.foggmobile.com\"\r");  // Need to be changed to your APN
       Serial1.readString();
       //Serial1.readString();
       display.println(F("Connecting to \naccess point.."));
