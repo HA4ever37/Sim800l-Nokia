@@ -17,7 +17,7 @@
 Adafruit_PCD8544 display = Adafruit_PCD8544(15, 16, 9, 8, 4);
 
 unsigned long startMillis, currentMillis;
-const unsigned long period = 30000;  //the value is a number of milliseconds
+const unsigned long period = 30000; // The value is a number in milliseconds
 bool GPRSCon, isItSleep;
 byte menuPos = 0;
 byte menuScreen = 0;
@@ -90,7 +90,7 @@ void loop() {
     else if (menuPos == 1)
       disConnectGPRS();
     else if (menuPos == 2) {
-      String s = openURL("raw.githubusercontent.com/HA4ever37/Sim800l/master/Sim800.txt"); // Change URL if your text file link
+      String s = openURL("raw.githubusercontent.com/HA4ever37/Sim800l/master/Sim800.txt"); // Change URL to your text file link
       if (s == "ERROR" || s == "" || s == "OK\r")  {
         display.println(F("Something \nwent wrong!"));
         display.display();
