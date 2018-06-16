@@ -8,9 +8,9 @@
 #define btnEnt 2
 #define btnUp 3
 #define btnDwn 7
-#define MENU_LENGTH 7
+#define MENU_LENGTH 8
 #define MENU_ROW_HEIGHT 11
-#define LCD_ROWS  4
+#define LCD_ROWS  8
 #define RXLED 17
 #define TXLED 30
 
@@ -23,7 +23,7 @@ byte menuPos = 0;
 byte menuScreen = 0;
 byte markerPos = 0;
 byte menuStartAt = 0;
-String menu[7] = {"Request", "Connect", "Disconnect", "Light", "Power Down", "Sleep 24 scnd", "Reset"};
+String menu[8] = {"Request", "Info", "Connect", "Disconnect", "Light", "Power Down", "Sleep 24 scnd", "Reset"};
 
 void setup() {
   pinMode(btnUp, INPUT_PULLUP);
@@ -113,16 +113,18 @@ void loop() {
       }
     }
     else if (menuPos == 1)
-      connectGPRS();
+      info();
     else if (menuPos == 2)
-      disConnectGPRS();
+      connectGPRS();
     else if (menuPos == 3)
-      toggle();
+      disConnectGPRS();
     else if (menuPos == 4)
-      pwrDown();
+      toggle();
     else if (menuPos == 5)
-      sleep24();
+      pwrDown();
     else if (menuPos == 6)
+      sleep24();
+    else if (menuPos == 7)
       resetAll();
     showMenu();
     delay(100);
@@ -184,17 +186,40 @@ String openURL(String string) {
   }
 }
 
-void resetAll() {
+void info() {
+  while (!GPRSCon)
+    connectGPRS();
   display.clearDisplay();
-  display.println(F("Restarting.."));
+  display.println(F("\rGetting info.."));
   display.display();
-  Serial1.flush();
-  //Serial.flush();
-  digitalWrite(resetPin, LOW);
-  delay(100);
-  digitalWrite(resetPin, HIGH);
-  delay(10000);
-  GPRSCon = false;
+  Serial1.write("AT+CIPGSMLOC=1,1\r");
+  delay(3000);
+  String s = Serial1.readString();
+  if (s.indexOf(",") == -1) {
+    display.println(F("Failed to \nget info!"));
+    display.display();
+    delay(2000);
+  }
+  else {
+    display.clearDisplay();
+    s = s.substring(s.indexOf(",") + 1, s.indexOf("OK"));
+    s.trim();
+    String data[4];
+    for (int i = 0; i < 4; i++) {
+      data[i] = s.substring(0, s.indexOf(","));
+      s = s.substring(s.indexOf(",") + 1, s.length());
+    }
+    display.print(F("Dt:"));
+    display.println(data[2]);
+    display.print(F("Time:"));
+    display.println(data[3]);
+    display.println(F("Longitude: "));
+    display.println(data[0]);
+    display.println(F("Latitude: "));
+    display.println(data[1]);
+    display.display();
+    while (!isButtonDown(btnEnt) && !isButtonDown(btnUp) && !isButtonDown(btnDwn));
+  }
 }
 
 void connectGPRS() {
@@ -273,6 +298,19 @@ void disConnectGPRS() {
   }
 }
 
+void resetAll() {
+  display.clearDisplay();
+  display.println(F("Restarting.."));
+  display.display();
+  Serial1.flush();
+  //Serial.flush();
+  digitalWrite(resetPin, LOW);
+  delay(100);
+  digitalWrite(resetPin, HIGH);
+  delay(10000);
+  GPRSCon = false;
+}
+
 void sleep24() {
   GPRSCon = false;
   digitalWrite(lcdBL, HIGH);
@@ -288,19 +326,6 @@ void sleep24() {
   digitalWrite(lcdBL, LOW);
   wakeUp();
   startMillis = currentMillis;
-}
-
-ISR(WDT_vect) {
-  wdt_disable();  // disable watchdog
-}
-
-void myWatchdogEnable(const byte interval) {
-  MCUSR = 0;                          // reset various flags
-  WDTCSR |= 0b00011000;               // see docs, set WDCE, WDE
-  WDTCSR =  0b01000000 | interval;    // set WDIE, and appropriate delay
-  wdt_reset();
-  set_sleep_mode (SLEEP_MODE_PWR_DOWN);
-  sleep_mode();            // now goes to Sleep and waits for the interrupt
 }
 
 void toggle() {
@@ -411,4 +436,17 @@ void ledRx( boolean on)
   else {
     pinMode( LED_BUILTIN_RX, INPUT);
   }
+}
+
+ISR(WDT_vect) {
+  wdt_disable();  // disable watchdog
+}
+
+void myWatchdogEnable(const byte interval) {
+  MCUSR = 0;                          // reset various flags
+  WDTCSR |= 0b00011000;               // see docs, set WDCE, WDE
+  WDTCSR =  0b01000000 | interval;    // set WDIE, and appropriate delay
+  wdt_reset();
+  set_sleep_mode (SLEEP_MODE_PWR_DOWN);
+  sleep_mode();            // now goes to Sleep and waits for the interrupt
 }
