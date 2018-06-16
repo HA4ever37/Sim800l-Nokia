@@ -8,7 +8,7 @@
 #define btnEnt 2
 #define btnUp 3
 #define btnDwn 7
-#define MENU_LENGTH 6
+#define MENU_LENGTH 7
 #define MENU_ROW_HEIGHT 11
 #define LCD_ROWS  4
 #define RXLED 17
@@ -23,7 +23,7 @@ byte menuPos = 0;
 byte menuScreen = 0;
 byte markerPos = 0;
 byte menuStartAt = 0;
-String menu[6] = {"Connect", "Disconnect", "Request", "Sleep 24s", "Reset", "Light"};
+String menu[7] = {"Request", "Connect", "Disconnect", "Light", "Power Down", "Sleep 24 scnd", "Reset"};
 
 void setup() {
   pinMode(btnUp, INPUT_PULLUP);
@@ -45,7 +45,7 @@ void setup() {
   Serial1.begin(9600);
   //Serial.begin(9600);
   //while (!Serial);
-  delay(10000);
+  delay(8000);  // You may increase this if 8 seconds isn't enough
   while (!checkSim800()) {
     display.clearDisplay();
     display.println(F("Sim800L is \nturned off or \nnot responding"));
@@ -85,12 +85,8 @@ void loop() {
     startMillis = currentMillis;
   }
   if (isButtonDown(btnEnt) == true) {
-    if (menuPos == 0)
-      connectGPRS();
-    else if (menuPos == 1)
-      disConnectGPRS();
-    else if (menuPos == 2) {
-      String s = openURL("raw.githubusercontent.com/HA4ever37/Sim800l/master/Sim800.txt"); // Change URL to your text file link
+    if (menuPos == 0) {
+      String s = openURL("raw.githubusercontent.com/HA4ever37/Sim800l/master/Sim800.txt"); // Change the URL to your text file link
       if (s == "ERROR" || s == "" || s == "OK\r")  {
         display.println(F("Something \nwent wrong!"));
         display.display();
@@ -116,35 +112,25 @@ void loop() {
         display.display();
       }
     }
+    else if (menuPos == 1)
+      connectGPRS();
+    else if (menuPos == 2)
+      disConnectGPRS();
     else if (menuPos == 3)
-      turnOff();
-    else if (menuPos == 4)
-      resetAll();
-    else if (menuPos == 5)
       toggle();
+    else if (menuPos == 4)
+      pwrDown();
+    else if (menuPos == 5)
+      sleep24();
+    else if (menuPos == 6)
+      resetAll();
     showMenu();
     delay(100);
     startMillis = currentMillis = millis();;
   }
 
-  if (currentMillis - startMillis >= period) {
-    isItSleep = true;
-    GPRSCon = false;
-    digitalWrite(lcdBL, HIGH);
-    display.clearDisplay();
-    display.display();
-    display.command( PCD8544_FUNCTIONSET | PCD8544_POWERDOWN);
-    digitalWrite(resetPin, LOW);
-    attachInterrupt(digitalPinToInterrupt(btnEnt), pinInterrupt, RISING);
-    set_sleep_mode(SLEEP_MODE_PWR_DOWN);
-    sleep_enable();
-    sleep_mode();
-    sleep_disable();
-    display.begin();
-    showMenu();
-    digitalWrite(lcdBL, LOW);
-    startMillis = currentMillis;
-  }
+  if (currentMillis - startMillis >= period)
+    pwrDown();
 }
 
 String openURL(String string) {
@@ -287,7 +273,7 @@ void disConnectGPRS() {
   }
 }
 
-void turnOff() {
+void sleep24() {
   GPRSCon = false;
   digitalWrite(lcdBL, HIGH);
   Serial1.write("AT+CPOWD=0\r");
@@ -297,7 +283,7 @@ void turnOff() {
   display.command( PCD8544_FUNCTIONSET | PCD8544_POWERDOWN);
   for (byte i = 0; i < 4; i++)
     myWatchdogEnable (0b100001);  // 8 seconds
-  //  myWatchdogEnable (0b100000);  // 4 seconds
+  //myWatchdogEnable (0b100000);  // 4 seconds
   display.begin();
   digitalWrite(lcdBL, LOW);
   wakeUp();
@@ -379,6 +365,27 @@ void wakeUp() {
     delay(2000);
     resetAll();
   }
+}
+
+void pwrDown() {
+  detachInterrupt(btnEnt);
+  delay(250);
+  isItSleep = true;
+  GPRSCon = false;
+  digitalWrite(lcdBL, HIGH);
+  display.clearDisplay();
+  display.display();
+  display.command( PCD8544_FUNCTIONSET | PCD8544_POWERDOWN);
+  digitalWrite(resetPin, LOW);
+  attachInterrupt(digitalPinToInterrupt(btnEnt), pinInterrupt, RISING);
+  set_sleep_mode(SLEEP_MODE_PWR_DOWN);
+  sleep_enable();
+  sleep_mode();
+  sleep_disable();
+  display.begin();
+  showMenu();
+  digitalWrite(lcdBL, LOW);
+  startMillis = currentMillis;
 }
 
 void pinInterrupt(void) {
