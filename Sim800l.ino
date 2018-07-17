@@ -23,7 +23,7 @@ byte menuPos = 0;
 byte menuScreen = 0;
 byte markerPos = 0;
 byte menuStartAt = 0;
-String menu[8] = {"Request", "Info", "Connect", "Disconnect", "Light", "Power Down", "Sleep 24 scnd", "Reset"};
+String menu[8] = {"Request", "Info", "Connect", "Disconnect", "Light", "Power Down", "Sleep 24 scnd", "Reset Sim800L"};
 
 void setup() {
   pinMode(btnUp, INPUT_PULLUP);
@@ -318,6 +318,7 @@ void sleep24() {
   Serial1.readString();
   display.clearDisplay();
   display.display();
+  pinInterrupt();
   display.command( PCD8544_FUNCTIONSET | PCD8544_POWERDOWN);
   for (byte i = 0; i < 4; i++)
     myWatchdogEnable (0b100001);  // 8 seconds
