@@ -146,7 +146,7 @@ String openURL(String string) {
   display.display();
   Serial1.write("AT+HTTPPARA=\"CID\",1\r");
   Serial1.readString();
-  display.print(F("Sending URL.."));
+  display.print(F("Sending URL\nrequest.."));
   display.display();
   Serial1.write("AT+HTTPPARA=\"URL\",\"");
   Serial1.print(string + "\"\r");
@@ -160,6 +160,8 @@ String openURL(String string) {
   //Serial.println(Serial1.readString());
   Serial1.write("AT+HTTPACTION=0\r");
   Serial1.readString();
+  while (!Serial1.available());
+  Serial1.readString();
   if (Serial1.readString().indexOf(",200,") != -1) {
     display.println(F("Request \failed!"));
     display.display();
@@ -167,10 +169,9 @@ String openURL(String string) {
     return "ERROR";
   }
   else {
-    display.println(F("Request \naccepted!"));
+    display.println(F("Request \naccepted!\n"));
     display.display();
     //Serial.println(Serial1.readString());
-    delay(3000);
     while (Serial1.available() > 0)
       Serial1.read();
     display.print(F("Downloading \ndata.."));
@@ -235,7 +236,7 @@ void connectGPRS() {
   }
   else {
     display.clearDisplay();
-    display.println(F("Initializing \nSim800L.."));
+    display.println(F("Initializing \nSim800L..\n"));
     display.display();
     Serial1.write("AT+CSCLK=0\r");
     Serial1.readString();
@@ -249,10 +250,10 @@ void connectGPRS() {
       Serial1.write("AT+SAPBR=3,1,\"APN\",\"freedompop.foggmobile.com\"\r");  // Need to be changed to your APN
       Serial1.readString();
       //Serial1.readString();
-      display.println(F("Connecting to \naccess point.."));
+      display.println(F("Trying to\nconnect to the\naccess point.."));
       display.display();
       Serial1.write("AT+SAPBR=1,1\r");
-      delay(2000);
+      while (!Serial1.available());
       if (Serial1.readString().indexOf("OK") != -1) {
         display.print(F("Connected!"));
         GPRSCon = true;
