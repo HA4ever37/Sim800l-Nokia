@@ -9,7 +9,7 @@
 #define btnEnt 2
 #define btnUp 3
 #define btnDwn 7
-#define MENU_LENGTH 10
+#define MENU_LENGTH 11
 #define MENU_ROW_HEIGHT 11
 #define LCD_ROWS  8
 #define RXLED 17
@@ -24,8 +24,7 @@ byte menuPos = 0;
 byte menuScreen = 0;
 byte markerPos = 0;
 byte menuStartAt = 0;
-String menu[10] = {"URL Request", "Network Info", "Connect", "Disconnect", "Light Switch", "Power Down", "Sleep 24 Scnd", "Reset Sim800L", "Save Info", "Last Saved"};
-int EepromPointer = 0;
+String menu[11] = {"URL Request", "Network Info", "Date & Time", "Connect", "Disconnect", "Light Switch", "Power Down", "Sleep 24 Scnd", "Reset Sim800L", "Save Info", "Last Saved"};
 
 void setup() {
   pinMode(btnUp, INPUT_PULLUP);
@@ -53,7 +52,7 @@ void setup() {
     display.println(F("Sim800L is \nturned off or \nnot responding"));
     display.display();
     delay(2000);
-    resetAll();
+    restSim800();
   }
   Serial1.write("AT+SAPBR=2,1\r");
   if (Serial1.readString().indexOf("0.0.0.0") == -1)
@@ -67,9 +66,8 @@ void loop() {
   if (isButtonDown(btnDwn) == true) {
     if (menuPos < MENU_LENGTH - 1) {
       menuPos++;
-      if (menuPos > 3) {
+      if (menuPos > 3)
         menuStartAt++;
-      }
       showMenu();
     }
     delay(100);
@@ -78,9 +76,8 @@ void loop() {
   if (isButtonDown(btnUp) == true) {
     if (menuPos > 0) {
       menuPos--;
-      if (menuStartAt > 0) {
+      if (menuStartAt > 0)
         menuStartAt--;
-      }
       showMenu();
     }
     delay(100);
@@ -94,7 +91,7 @@ void loop() {
         display.println(F("Something \nwent wrong!"));
         display.display();
         delay(1000);
-        resetAll();
+        restSim800();
       }
       else {
         //Serial.print(F("Result: "));
@@ -118,26 +115,27 @@ void loop() {
     else if (menuPos == 1)
       info(false);
     else if (menuPos == 2)
-      connectGPRS();
+      dateTime();
     else if (menuPos == 3)
-      disConnectGPRS();
+      connectGPRS();
     else if (menuPos == 4)
-      toggle();
+      disConnectGPRS();
     else if (menuPos == 5)
-      pwrDown();
+      toggle();
     else if (menuPos == 6)
-      sleep24();
+      pwrDown();
     else if (menuPos == 7)
-      resetAll();
+      sleep24();
     else if (menuPos == 8)
-      info(true);
+      restSim800();
     else if (menuPos == 9)
+      info(true);
+    else if (menuPos == 10)
       readEeprom();
     showMenu();
     delay(100);
     startMillis = currentMillis = millis();;
   }
-
   if (currentMillis - startMillis >= period)
     pwrDown();
 }
@@ -240,6 +238,25 @@ void info(bool save) {
   }
 }
 
+void dateTime() {
+  String data[2];
+  while (true) {
+    Serial1.write("AT+CCLK?\r");
+    String s = Serial1.readString();
+    data[0] = s.substring(s.indexOf("\"") + 1, s.indexOf(","));
+    data[1] = s.substring(s.indexOf(",") + 1, s.indexOf("-"));
+    display.clearDisplay();
+    display.println(F("Network Date:"));
+    display.println(data[0]);
+    display.println(F("Network Time:"));
+    display.println(data[1]);
+    display.display();
+    delay(100);
+    if (isButtonDown(btnEnt) || isButtonDown(btnUp) || isButtonDown(btnDwn))
+      break;
+  }
+}
+
 void connectGPRS() {
   if (isItSleep) {
     wakeUp();
@@ -280,14 +297,14 @@ void connectGPRS() {
         display.print(F("Failed to \nconnect!"));
         display.display();
         delay(1000);
-        resetAll();
+        restSim800();
       }
     }
     else {
       display.print(F("Failed to \nconnect!"));
       display.display();
       delay(1000);
-      resetAll();
+      restSim800();
     }
   }
 }
@@ -316,11 +333,11 @@ void disConnectGPRS() {
     GPRSCon = false;
   }
 }
+
 void readEeprom() {
   String s;
-  for (int i = 0; i < EEPROM.length(); i++) {
+  for (int i = 0; i < EEPROM.length(); i++)
     s += (char)EEPROM.read(i);
-  }
   display.clearDisplay();
   display.print(s);
   display.display();
@@ -329,16 +346,12 @@ void readEeprom() {
 }
 
 void writeEeprom(String s) {
-  EepromPointer = 0;
   for (int i = 0; i < s.length(); i++) {
-    EEPROM.write(EepromPointer, s.charAt(i));
-    EepromPointer++;
-    if (EepromPointer == EEPROM.length())
-      EepromPointer = 0;
+    EEPROM.write(i, s.charAt(i));
   }
 }
 
-void resetAll() {
+void restSim800() {
   display.clearDisplay();
   display.println(F("Restarting.."));
   display.display();
@@ -376,9 +389,8 @@ void toggle() {
 bool isButtonDown(int pin) {
   if (digitalRead(pin) == LOW) {
     delay(30);
-    if (digitalRead(pin) == LOW) {
+    if (digitalRead(pin) == LOW)
       return true;
-    }
     return false;
   }
   return false;
@@ -396,9 +408,8 @@ void showMenu() {
       display.fillRect(0, markerY, display.width(), MENU_ROW_HEIGHT, WHITE);
     }
 
-    if (i >= MENU_LENGTH) {
+    if (i >= MENU_LENGTH)
       continue;
-    }
     display.setCursor(2, markerY + 2);
     display.print(menu[i]);
   }
@@ -429,7 +440,7 @@ void wakeUp() {
     display.println(F("Sim800L is \nturned off or \nnot responding"));
     display.display();
     delay(2000);
-    resetAll();
+    restSim800();
   }
 }
 
