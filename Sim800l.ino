@@ -1,3 +1,4 @@
+#include <EEPROM.h>
 #include <avr/sleep.h>
 #include <avr/wdt.h>
 #include <Adafruit_GFX.h>
@@ -8,7 +9,7 @@
 #define btnEnt 2
 #define btnUp 3
 #define btnDwn 7
-#define MENU_LENGTH 8
+#define MENU_LENGTH 10
 #define MENU_ROW_HEIGHT 11
 #define LCD_ROWS  8
 #define RXLED 17
@@ -23,7 +24,8 @@ byte menuPos = 0;
 byte menuScreen = 0;
 byte markerPos = 0;
 byte menuStartAt = 0;
-String menu[8] = {"Request", "Info", "Connect", "Disconnect", "Light", "Power Down", "Sleep 24 scnd", "Reset Sim800L"};
+String menu[10] = {"URL Request", "Network Info", "Connect", "Disconnect", "Light Switch", "Power Down", "Sleep 24 Scnd", "Reset Sim800L", "Save Info", "Last Saved"};
+int EepromPointer = 0;
 
 void setup() {
   pinMode(btnUp, INPUT_PULLUP);
@@ -88,6 +90,7 @@ void loop() {
     if (menuPos == 0) {
       String s = openURL("raw.githubusercontent.com/HA4ever37/Sim800l/master/Sim800.txt"); // Change the URL to your text file link
       if (s == "ERROR" || s == "" || s == "OK\r")  {
+
         display.println(F("Something \nwent wrong!"));
         display.display();
         delay(1000);
@@ -113,7 +116,7 @@ void loop() {
       }
     }
     else if (menuPos == 1)
-      info();
+      info(false);
     else if (menuPos == 2)
       connectGPRS();
     else if (menuPos == 3)
@@ -126,6 +129,10 @@ void loop() {
       sleep24();
     else if (menuPos == 7)
       resetAll();
+    else if (menuPos == 8)
+      info(true);
+    else if (menuPos == 9)
+      readEeprom();
     showMenu();
     delay(100);
     startMillis = currentMillis = millis();;
@@ -150,6 +157,8 @@ String openURL(String string) {
   display.display();
   Serial1.write("AT+HTTPPARA=\"URL\",\"");
   Serial1.print(string + "\"\r");
+  if (Serial1.readString().equals("ERROR"))
+    return "ERROR";
   display.print(Serial1.readString());
   display.display();
   display.clearDisplay();
@@ -187,14 +196,14 @@ String openURL(String string) {
   }
 }
 
-void info() {
+void info(bool save) {
   while (!GPRSCon)
     connectGPRS();
   display.clearDisplay();
   display.println(F("\rGetting info.."));
   display.display();
   Serial1.write("AT+CIPGSMLOC=1,1\r");
-  delay(3000);
+  while (!Serial1.available());
   String s = Serial1.readString();
   if (s.indexOf(",") == -1) {
     display.println(F("Failed to \nget info!"));
@@ -210,16 +219,24 @@ void info() {
       data[i] = s.substring(0, s.indexOf(","));
       s = s.substring(s.indexOf(",") + 1, s.length());
     }
-    display.print(F("Dt:"));
-    display.println(data[2]);
-    display.print(F("Time:"));
-    display.println(data[3]);
-    display.println(F("Longitude: "));
-    display.println(data[0]);
-    display.println(F("Latitude: "));
-    display.println(data[1]);
-    display.display();
-    while (!isButtonDown(btnEnt) && !isButtonDown(btnUp) && !isButtonDown(btnDwn));
+    if (!save) {
+      display.print(F("Dt:"));
+      display.println(data[2]);
+      display.print(F("Time:"));
+      display.println(data[3]);
+      display.println(F("Longitude: "));
+      display.println(data[0]);
+      display.println(F("Latitude: "));
+      display.println(data[1]);
+      display.display();
+      while (!isButtonDown(btnEnt) && !isButtonDown(btnUp) && !isButtonDown(btnDwn));
+    }
+    if (save) {
+      writeEeprom("Dt:" + data[2] + "\nTime:" + data[3] + "\nLongitude:\n" + data[0] + "\nLatitude:\n" + data[1]);
+      display.print(F("Info saved \nto Eeprom!:"));
+      display.display();
+      delay(2000);
+    }
   }
 }
 
@@ -238,7 +255,7 @@ void connectGPRS() {
     display.clearDisplay();
     display.println(F("Initializing \nSim800L..\n"));
     display.display();
-    Serial1.write("AT+CSCLK=0\r");
+    Serial1.write("AT + CSCLK = 0\r");
     Serial1.readString();
     //Serial1.readString();
     Serial1.write("ATE0\r");
@@ -247,11 +264,12 @@ void connectGPRS() {
       Serial1.readString();
       //Serial1.readString();
       //Serial.println(F("Setting up \naccess point.."));
-      Serial1.write("AT+SAPBR=3,1,\"APN\",\"freedompop.foggmobile.com\"\r");  // Need to be changed to your APN
+      Serial1.write("AT + SAPBR = 3, 1, \"APN\",\"freedompop.foggmobile.com\"\r"); // Need to be changed to your APN
       Serial1.readString();
       //Serial1.readString();
       display.println(F("Trying to\nconnect to the\naccess point.."));
       display.display();
+      display.clearDisplay();
       Serial1.write("AT+SAPBR=1,1\r");
       while (!Serial1.available());
       if (Serial1.readString().indexOf("OK") != -1) {
@@ -296,6 +314,27 @@ void disConnectGPRS() {
     display.display();
     //Serial1.readString();
     GPRSCon = false;
+  }
+}
+void readEeprom() {
+  String s;
+  for (int i = 0; i < EEPROM.length(); i++) {
+    s += (char)EEPROM.read(i);
+  }
+  display.clearDisplay();
+  display.print(s);
+  display.display();
+  delay(100);
+  while (!isButtonDown(btnEnt) && !isButtonDown(btnUp) && !isButtonDown(btnDwn));
+}
+
+void writeEeprom(String s) {
+  EepromPointer = 0;
+  for (int i = 0; i < s.length(); i++) {
+    EEPROM.write(EepromPointer, s.charAt(i));
+    EepromPointer++;
+    if (EepromPointer == EEPROM.length())
+      EepromPointer = 0;
   }
 }
 
