@@ -239,19 +239,32 @@ void info(bool save) {
 }
 
 void dateTime() {
+  if (isItSleep) {
+    wakeUp();
+    isItSleep = false;
+  }
   String data[2];
   while (true) {
     Serial1.write("AT+CCLK?\r");
     String s = Serial1.readString();
+    String am_pm = "AM";
+    int hrs = "12";
     data[0] = s.substring(s.indexOf("\"") + 1, s.indexOf(","));
     data[1] = s.substring(s.indexOf(",") + 1, s.indexOf("-"));
+    if (data[1].substring(0, 2).toInt() > 12) {
+      am_pm = "PM";
+      hrs = data[1].substring(0, 2).toInt() - 12;
+    }
+    else if (data[1].substring(0, 2).toInt() < 12)
+      hrs = data[1].substring(0, 2).toInt();
+    else if (data[1].substring(0, 2).toInt() == 12)
+      am_pm = "PM";
     display.clearDisplay();
     display.println(F("Network Date:"));
-    display.println(data[0]);
-    display.println(F("Network Time:"));
-    display.println(data[1]);
+    display.println("20" + data[0]);
+    display.println(F("\nNetwork Time:"));
+    display.println(hrs + data[1].substring(2, data[1].length() ) + " " + am_pm);
     display.display();
-    delay(100);
     if (isButtonDown(btnEnt) || isButtonDown(btnUp) || isButtonDown(btnDwn))
       break;
   }
@@ -371,7 +384,6 @@ void sleep24() {
   Serial1.readString();
   display.clearDisplay();
   display.display();
-  pinInterrupt();
   display.command( PCD8544_FUNCTIONSET | PCD8544_POWERDOWN);
   for (byte i = 0; i < 4; i++)
     myWatchdogEnable (0b100001);  // 8 seconds
