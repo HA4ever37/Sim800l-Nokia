@@ -1,5 +1,12 @@
 # Sim800l
-Requesting a text file from a URL using Sim800L and Arduino Pro Micro (Atmega32u4) as a microcontroller and then display the result on Nokia 5110 display (PCD8544).
+Utilizing functions of Sim800L module beyond call and sms.
+
+Features:
+* Request a text file from a URL and display the result on screen
+* Show Date & time from newwork
+* Show current Location (LBS) info
+* Save (to eeprom) and retrive last saved location info
+
 
 Two libraries are needed : "Adafruit_GFX" and "Adafruit_PCD8544"
 
