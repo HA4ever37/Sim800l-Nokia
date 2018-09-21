@@ -19,7 +19,7 @@ Adafruit_PCD8544 display = Adafruit_PCD8544(15, 16, 9, 8, 4);
 
 unsigned long startMillis, currentMillis;
 const unsigned long period = 30000; // The value is a number in milliseconds
-bool GPRSCon, isItSleep;
+bool GPRSCon, isItSleep, exitBool;
 byte menuPos = 0;
 byte menuScreen = 0;
 byte markerPos = 0;
@@ -113,9 +113,9 @@ void loop() {
       }
     }
     else if (menuPos == 1)
-      dateTime();
+      netInfo();
     else if (menuPos == 2)
-      info(false);
+      locInfo(false);
     else if (menuPos == 3)
       connectGPRS();
     else if (menuPos == 4)
@@ -129,7 +129,7 @@ void loop() {
     else if (menuPos == 8)
       restSim800();
     else if (menuPos == 9)
-      info(true);
+      locInfo(true);
     else if (menuPos == 10)
       readEeprom();
     showMenu();
@@ -151,7 +151,7 @@ String openURL(String string) {
   display.display();
   Serial1.write("AT+HTTPPARA=\"CID\",1\r");
   Serial1.readString();
-  display.print(F("Sending URL\nrequest.."));
+  display.print(F("Sending URL\nrequest"));
   display.display();
   Serial1.write("AT+HTTPPARA=\"URL\",\"");
   Serial1.print(string + "\"\r");
@@ -181,7 +181,7 @@ String openURL(String string) {
     //Serial.println(Serial1.readString());
     while (Serial1.available() > 0)
       Serial1.read();
-    display.print(F("Downloading \ndata.."));
+    display.print(F("Downloading \ndata"));
     display.display();
     Serial1.write("AT+HTTPREAD\r");
     string = Serial1.readString();
@@ -194,11 +194,11 @@ String openURL(String string) {
   }
 }
 
-void info(bool save) {
+void locInfo(bool save) {
   while (!GPRSCon)
     connectGPRS();
   display.clearDisplay();
-  display.println(F("\rGetting info.."));
+  display.println(F("Getting\nlocation info"));
   display.display();
   Serial1.write("AT+CIPGSMLOC=1,1\r");
   while (!Serial1.available());
@@ -238,16 +238,23 @@ void info(bool save) {
   }
 }
 
-void dateTime() {
+void netInfo() {
   if (isItSleep) {
     wakeUp();
     isItSleep = false;
   }
-  String data[2];
-  Serial1.write("AT+COPS?\r");
-  String network = Serial1.readString();
-  network = network.substring(network.indexOf("\"") + 1, network.lastIndexOf("\""));
-  while (true) {
+  display.clearDisplay();
+  display.println(F("Getting\nnetwork info"));
+  display.display();
+  String data[2], network;
+  do {
+    Serial1.write("AT+COPS?\r");
+    network = Serial1.readString();
+    //Serial.println(network);
+  } while (network.indexOf("+COPS: 0,0,\"") == -1);
+  network = network.substring(network.indexOf(",\"") + 2, network.lastIndexOf("\""));
+  exitBool = false;
+  while (!exitBool) {
     Serial1.write("AT+CCLK?\r");
     String s = Serial1.readString();
     String am_pm = "AM";
@@ -264,15 +271,21 @@ void dateTime() {
     else if (data[1].substring(0, 2).toInt() < hrs)
       hrs = data[1].substring(0, 2).toInt();
     display.clearDisplay();
+    display.println(F("Network Name:"));
     display.println(network);
-    display.println(F("\nNetwork Date:"));
+    display.println(F("Network Date:"));
     display.println("  20" + data[0]);
     display.println(F("Network Time:"));
     display.println("  " + String(hrs) + data[1].substring(2, data[1].length() ) + " " + am_pm);
     display.display();
-    if (isButtonDown(btnEnt) || isButtonDown(btnUp) || isButtonDown(btnDwn))
-      break;
+    attachInterrupt(digitalPinToInterrupt(btnEnt), exitLoop, RISING);
+
   }
+}
+
+void exitLoop() {
+  detachInterrupt(btnEnt);
+  exitBool = true;
 }
 
 void connectGPRS() {
@@ -288,7 +301,7 @@ void connectGPRS() {
   }
   else {
     display.clearDisplay();
-    display.println(F("Initializing \nSim800L..\n"));
+    display.println(F("Initializing \nSim800L\n"));
     display.display();
     Serial1.write("AT + CSCLK = 0\r");
     Serial1.readString();
@@ -298,11 +311,11 @@ void connectGPRS() {
     if (Serial1.available() > 0) {
       Serial1.readString();
       //Serial1.readString();
-      //Serial.println(F("Setting up \naccess point.."));
+      //Serial.println(F("Setting up \naccess point"));
       Serial1.write("AT + SAPBR = 3, 1, \"APN\",\"freedompop.foggmobile.com\"\r"); // Need to be changed to your APN
       Serial1.readString();
       //Serial1.readString();
-      display.println(F("Trying to\nconnect to the\naccess point.."));
+      display.println(F("Trying to\nconnect to the\naccess point"));
       display.display();
       display.clearDisplay();
       Serial1.write("AT+SAPBR=1,1\r");
@@ -336,7 +349,7 @@ void disConnectGPRS() {
   }
   else {
     display.clearDisplay();
-    display.print(F("Disconnect \nGPRS.."));
+    display.print(F("Disconnect \nGPRS"));
     display.display();
     Serial1.write("AT+SAPBR=0,1\r");
     display.print(Serial1.readString());
@@ -371,7 +384,7 @@ void writeEeprom(String s) {
 
 void restSim800() {
   display.clearDisplay();
-  display.println(F("Restarting.."));
+  display.println(F("Restarting"));
   display.display();
   Serial1.flush();
   //Serial.flush();
@@ -449,7 +462,7 @@ bool checkSim800() {
 void wakeUp() {
   digitalWrite(resetPin, HIGH);
   display.clearDisplay();
-  display.println(F("Waking up \nSim800L.."));
+  display.println(F("Waking up \nSim800L"));
   display.display();
   delay(10000);
   while (!checkSim800()) {
@@ -483,7 +496,7 @@ void pwrDown() {
 }
 
 void pinInterrupt(void) {
-  detachInterrupt(0);
+  detachInterrupt(btnEnt);
 }
 
 void ledTx( boolean on) {
