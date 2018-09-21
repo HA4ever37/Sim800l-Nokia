@@ -4,8 +4,8 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_PCD8544.h>
 
-#define resetPin 6
-#define lcdBL 5
+#define resetPin 6      // Reset pin for Sim800L
+#define lcdBL 5         // LCD backlight pin
 #define btnEnt 2
 #define btnUp 3
 #define btnDwn 7
@@ -24,7 +24,7 @@ byte menuPos = 0;
 byte menuScreen = 0;
 byte markerPos = 0;
 byte menuStartAt = 0;
-String menu[11] = {"URL Request", "Network Info", "Date & Time", "Connect", "Disconnect", "Light Switch", "Power Down", "Sleep 24 Scnd", "Reset Sim800L", "Save Info", "Last Saved"};
+String menu[11] = {"URL Request", "Network Info", "Location Info", "Connect", "Disconnect", "Light Switch", "Power Down", "Sleep 24 Scnd", "Reset Sim800L", "Save Location", "Last Saved"};
 
 void setup() {
   pinMode(btnUp, INPUT_PULLUP);
@@ -99,7 +99,7 @@ void loop() {
         display.clearDisplay();
         digitalWrite(lcdBL, LOW);
         for (int i = 0; i < s.length(); i++) {
-          Serial.print(s.charAt(i));
+          //Serial.print(s.charAt(i));
           display.print(s.charAt(i));
         }
         s = "";
@@ -113,9 +113,9 @@ void loop() {
       }
     }
     else if (menuPos == 1)
-      info(false);
-    else if (menuPos == 2)
       dateTime();
+    else if (menuPos == 2)
+      info(false);
     else if (menuPos == 3)
       connectGPRS();
     else if (menuPos == 4)
@@ -244,26 +244,31 @@ void dateTime() {
     isItSleep = false;
   }
   String data[2];
+  Serial1.write("AT+COPS?\r");
+  String network = Serial1.readString();
+  network = network.substring(network.indexOf("\"") + 1, network.lastIndexOf("\""));
   while (true) {
     Serial1.write("AT+CCLK?\r");
     String s = Serial1.readString();
     String am_pm = "AM";
-    int hrs = "12";
+    int hrs = 12;
     data[0] = s.substring(s.indexOf("\"") + 1, s.indexOf(","));
     data[1] = s.substring(s.indexOf(",") + 1, s.indexOf("-"));
-    if (data[1].substring(0, 2).toInt() > 12) {
+    if (data[1].substring(0, 2).toInt() > hrs) {
       am_pm = "PM";
-      hrs = data[1].substring(0, 2).toInt() - 12;
+      hrs = data[1].substring(0, 2).toInt() - hrs;
     }
-    else if (data[1].substring(0, 2).toInt() < 12)
-      hrs = data[1].substring(0, 2).toInt();
-    else if (data[1].substring(0, 2).toInt() == 12)
+    else if (data[1].substring(0, 2).toInt() == hrs)
       am_pm = "PM";
+    else if (data[1].substring(0, 2).toInt() == 0);
+    else if (data[1].substring(0, 2).toInt() < hrs)
+      hrs = data[1].substring(0, 2).toInt();
     display.clearDisplay();
-    display.println(F("Network Date:"));
-    display.println("20" + data[0]);
-    display.println(F("\nNetwork Time:"));
-    display.println(hrs + data[1].substring(2, data[1].length() ) + " " + am_pm);
+    display.println(network);
+    display.println(F("\nNetwork Date:"));
+    display.println("  20" + data[0]);
+    display.println(F("Network Time:"));
+    display.println("  " + String(hrs) + data[1].substring(2, data[1].length() ) + " " + am_pm);
     display.display();
     if (isButtonDown(btnEnt) || isButtonDown(btnUp) || isButtonDown(btnDwn))
       break;
