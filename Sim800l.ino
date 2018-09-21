@@ -11,7 +11,7 @@
 #define btnDwn 7
 #define MENU_LENGTH 11
 #define MENU_ROW_HEIGHT 11
-#define LCD_ROWS  8
+#define LCD_ROWS  5
 #define RXLED 17
 #define TXLED 30
 
@@ -54,9 +54,7 @@ void setup() {
     delay(2000);
     restSim800();
   }
-  Serial1.write("AT+SAPBR=2,1\r");
-  if (Serial1.readString().indexOf("0.0.0.0") == -1)
-    GPRSCon = true;
+  GPRSCon = checkGPRS();
   showMenu();
   startMillis = millis();
 }
@@ -112,8 +110,10 @@ void loop() {
         display.display();
       }
     }
-    else if (menuPos == 1)
+    else if (menuPos == 1) {
+      detachInterrupt(btnEnt);
       netInfo();
+    }
     else if (menuPos == 2)
       locInfo(false);
     else if (menuPos == 3)
@@ -222,10 +222,10 @@ void locInfo(bool save) {
       display.println(data[2]);
       display.print(F("Time:"));
       display.println(data[3]);
-      display.println(F("Longitude: "));
-      display.println(data[0]);
       display.println(F("Latitude: "));
       display.println(data[1]);
+      display.println(F("Longitude: "));
+      display.println(data[0]);
       display.display();
       while (!isButtonDown(btnEnt) && !isButtonDown(btnUp) && !isButtonDown(btnDwn));
     }
@@ -252,8 +252,9 @@ void netInfo() {
     network = Serial1.readString();
     //Serial.println(network);
   } while (network.indexOf("+COPS: 0,0,\"") == -1);
-  network = network.substring(network.indexOf(",\"") + 2, network.lastIndexOf("\""));
+  network = network.substring(network.indexOf("0,\"") + 3, network.lastIndexOf("\""));
   exitBool = false;
+  attachInterrupt(digitalPinToInterrupt(btnEnt), exitLoop, FALLING);
   while (!exitBool) {
     Serial1.write("AT+CCLK?\r");
     String s = Serial1.readString();
@@ -278,14 +279,21 @@ void netInfo() {
     display.println(F("Network Time:"));
     display.println("  " + String(hrs) + data[1].substring(2, data[1].length() ) + " " + am_pm);
     display.display();
-    attachInterrupt(digitalPinToInterrupt(btnEnt), exitLoop, RISING);
-
   }
 }
 
 void exitLoop() {
-  detachInterrupt(btnEnt);
-  exitBool = true;
+  if (isButtonDown(btnEnt)) {
+    detachInterrupt(btnEnt);
+    exitBool = true;
+  }
+}
+
+bool checkGPRS() {
+  Serial1.write("AT+SAPBR=2,1\r");
+  if (Serial1.readString().indexOf("+SAPBR: 1,1,") != -1)
+    return true;
+  return false;
 }
 
 void connectGPRS() {
@@ -293,7 +301,7 @@ void connectGPRS() {
     wakeUp();
     isItSleep = false;
   }
-  if (GPRSCon) {
+  if (checkGPRS()) {
     display.clearDisplay();
     display.println(F("Already \nconnected!"));
     display.display();
@@ -341,7 +349,7 @@ void connectGPRS() {
 }
 
 void disConnectGPRS() {
-  if (!GPRSCon) {
+  if (!checkGPRS()) {
     display.clearDisplay();
     display.println(F("Already \ndisconnected!"));
     display.display();
