@@ -9,7 +9,7 @@
 #define btnEnt 2
 #define btnUp 3
 #define btnDwn 7
-#define MENU_LENGTH 11
+#define MENU_LENGTH 12
 #define MENU_ROW_HEIGHT 11
 #define LCD_ROWS  5
 #define RXLED 17
@@ -24,7 +24,9 @@ byte menuPos = 0;
 byte menuScreen = 0;
 byte markerPos = 0;
 byte menuStartAt = 0;
-String menu[11] = {"URL Request", "Network Info", "Location Info", "Connect", "Disconnect", "Light Switch", "Power Down", "Sleep 24 Scnd", "Reset Sim800L", "Save Location", "Last Saved"};
+const String menu[12] = {"URL Request", "Network Info", "Location Info", "Connect", "Disconnect", "Light Switch",
+                         "Power Down", "Sleep 24 Scnd", "Reset Sim800L", "Send Location" , "Save Location", "Last Saved"
+                        };
 
 void setup() {
   pinMode(btnUp, INPUT_PULLUP);
@@ -83,7 +85,7 @@ void loop() {
   }
   if (isButtonDown(btnEnt) == true) {
     if (menuPos == 0) {
-      String s = openURL("raw.githubusercontent.com/HA4ever37/Sim800l/master/Sim800.txt"); // Change the URL to your text file link
+      String s = openURL(F("raw.githubusercontent.com/HA4ever37/Sim800l/master/Sim800.txt")); // Change the URL to your text file link
       if (s == "ERROR" || s == "" || s == "OK\r")  {
 
         display.println(F("Something \nwent wrong!"));
@@ -92,15 +94,13 @@ void loop() {
         restSim800();
       }
       else {
-        //Serial.print(F("Result: "));
         s = s.substring(s.indexOf("\r") + 2, s.lastIndexOf("OK"));
         display.clearDisplay();
         digitalWrite(lcdBL, LOW);
-        for (int i = 0; i < s.length(); i++) {
+        for (byte i = 0; i < s.length(); i++) {
           //Serial.print(s.charAt(i));
           display.print(s.charAt(i));
         }
-        s = "";
         display.display();
         digitalWrite(lcdBL, HIGH);
         delay(500);
@@ -115,7 +115,7 @@ void loop() {
       netInfo();
     }
     else if (menuPos == 2)
-      locInfo(false);
+      locInfo(0);
     else if (menuPos == 3)
       connectGPRS();
     else if (menuPos == 4)
@@ -129,8 +129,10 @@ void loop() {
     else if (menuPos == 8)
       restSim800();
     else if (menuPos == 9)
-      locInfo(true);
+      locInfo(1);
     else if (menuPos == 10)
+      locInfo(2);
+    else if (menuPos == 11)
       readEeprom();
     showMenu();
     delay(100);
@@ -143,29 +145,28 @@ void loop() {
 String openURL(String string) {
   while (!GPRSCon)
     connectGPRS();
-  Serial1.write("AT+HTTPINIT\r");
+  Serial1.print(F("AT+HTTPINIT\r"));
   display.clearDisplay();
   display.print(F("HTTP \nIntialization"));
   display.display();
   display.print(Serial1.readString());
   display.display();
-  Serial1.write("AT+HTTPPARA=\"CID\",1\r");
+  Serial1.print(F("AT+HTTPPARA=\"CID\",1\r"));
   Serial1.readString();
   display.print(F("Sending URL\nrequest"));
   display.display();
-  Serial1.write("AT+HTTPPARA=\"URL\",\"");
+  Serial1.print(F("AT+HTTPPARA=\"URL\",\""));
   Serial1.print(string + "\"\r");
-  if (Serial1.readString().equals("ERROR"))
+  if (Serial1.readString().equals(F("ERROR")))
     return "ERROR";
   display.print(Serial1.readString());
   display.display();
   display.clearDisplay();
-  Serial1.write("AT+HTTPPARA =\"REDIR\",1\r");
+  Serial1.print(F("AT+HTTPPARA =\"REDIR\",1\r"));
   Serial1.readString();
-  Serial1.write("AT+HTTPSSL=1 \r");
+  Serial1.print(F("AT+HTTPSSL=1 \r"));
   Serial1.readString();
-  //Serial.println(Serial1.readString());
-  Serial1.write("AT+HTTPACTION=0\r");
+  Serial1.print(F("AT+HTTPACTION=0\r"));
   Serial1.readString();
   while (!Serial1.available());
   Serial1.readString();
@@ -178,7 +179,6 @@ String openURL(String string) {
   else {
     display.println(F("Request \naccepted!\n"));
     display.display();
-    //Serial.println(Serial1.readString());
     while (Serial1.available() > 0)
       Serial1.read();
     display.print(F("Downloading \ndata"));
@@ -186,21 +186,19 @@ String openURL(String string) {
     Serial1.write("AT+HTTPREAD\r");
     string = Serial1.readString();
     string.trim();
-    //Serial.println(string);
-    Serial1.write("AT+HTTPTERM\r");
+    Serial1.print(F("AT+HTTPTERM\r"));
     Serial1.readString();
-    //Serial1.readString();
     return string;
   }
 }
 
-void locInfo(bool save) {
+void locInfo(byte save) {
   while (!GPRSCon)
     connectGPRS();
   display.clearDisplay();
   display.println(F("Getting\nlocation info"));
   display.display();
-  Serial1.write("AT+CIPGSMLOC=1,1\r");
+  Serial1.print(F("AT+CIPGSMLOC=1,1\r"));
   while (!Serial1.available());
   String s = Serial1.readString();
   if (s.indexOf(",") == -1) {
@@ -213,11 +211,11 @@ void locInfo(bool save) {
     s = s.substring(s.indexOf(",") + 1, s.indexOf("OK"));
     s.trim();
     String data[4];
-    for (int i = 0; i < 4; i++) {
+    for (byte i = 0; i < 4; i++) {
       data[i] = s.substring(0, s.indexOf(","));
       s = s.substring(s.indexOf(",") + 1, s.length());
     }
-    if (!save) {
+    if (save == 0) {
       display.print(F("Dt:"));
       display.println(data[2]);
       display.print(F("Time:"));
@@ -229,7 +227,40 @@ void locInfo(bool save) {
       display.display();
       while (!isButtonDown(btnEnt) && !isButtonDown(btnUp) && !isButtonDown(btnDwn));
     }
-    if (save) {
+    else if (save == 1) {
+      s = "{ \"Date\": \"" + data[2] + "\", \"Time\": \"" + data[3] + "\", \"Location link\": \"www.google.com/maps?q=" + data[1] + "," + data[0] + "\" }";
+      Serial1.print(F("AT+HTTPINIT\r"));
+      Serial1.readString();
+      Serial1.print(F("AT+HTTPPARA = \"CID\",1\r"));
+      Serial1.print(F("AT+HTTPPARA=\"URL\",\"api.jsonbin.io/b\"\r"));
+      Serial1.readString();
+      Serial1.print(F("AT+HTTPPARA=\"CONTENT\",\"application/json\"\r"));
+      Serial1.readString();
+      Serial1.print(F("AT+HTTPPARA=\"USERDATA\",\"secret-key: $2a$10$/4cwS1j8JzAgdbYKEDbeM.x19a0UM5C612PtEvoBv.hqtGagcY.DG\\r\\nprivate: true\"\r"));
+      Serial1.readString();
+      Serial1.print(F("AT+HTTPDATA="));
+      Serial1.print(String(s.length()) + ",10000\r");
+      Serial1.readString();
+      Serial1.print(s + "\r");
+      Serial1.readString();
+      Serial1.print(F("AT+HTTPACTION=1\r"));
+      Serial1.readString();
+      while (!Serial1.available());
+      if (Serial1.readString().indexOf(",200,") == -1 ) {
+        display.print(F("Failed to\nupload info!"));
+        display.display();
+      }
+      else {
+        display.print(F("Location \nuploaded!"));
+        Serial.println(F("Location \nuploaded!"));
+        display.display();
+      }
+      Serial1.print(F("AT+HTTPREAD\r"));
+      Serial1.readString();
+      Serial1.print(F("AT+HTTPTERM\r"));
+      Serial1.readString();
+    }
+    else if (save == 2) {
       writeEeprom("Dt:" + data[2] + "\nTime:" + data[3] + "\nLongitude:\n" + data[0] + "\nLatitude:\n" + data[1]);
       display.print(F("Info saved \nto Eeprom!:"));
       display.display();
@@ -237,7 +268,6 @@ void locInfo(bool save) {
     }
   }
 }
-
 void netInfo() {
   if (isItSleep) {
     wakeUp();
@@ -248,7 +278,7 @@ void netInfo() {
   display.display();
   String data[2], network;
   do {
-    Serial1.write("AT+COPS?\r");
+    Serial1.print(F("AT+COPS?\r"));
     network = Serial1.readString();
     //Serial.println(network);
   } while (network.indexOf("+COPS: 0,0,\"") == -1);
@@ -256,27 +286,39 @@ void netInfo() {
   exitBool = false;
   attachInterrupt(digitalPinToInterrupt(btnEnt), exitLoop, FALLING);
   while (!exitBool) {
-    Serial1.write("AT+CCLK?\r");
+    Serial1.print(F("AT+CSQ\r"));
+    String quality = Serial1.readString();
+    quality = quality.substring(quality.indexOf(": ") + 2, quality.indexOf(","));
+    //Serial.println(quality);
+    if (quality.toInt() < 10)
+      quality = "Poor " + quality;
+    else if (quality.toInt() < 15)
+      quality = "Fair " + quality;
+    if (quality.toInt() < 20)
+      quality = "Good " + quality;
+    else
+      quality = "Excellent " + quality;
+    Serial1.print(F("AT+CCLK?\r"));
     String s = Serial1.readString();
-    String am_pm = "AM";
-    int hrs = 12;
+    char am_pm[] = "AM";
+    byte hrs = 12;
     data[0] = s.substring(s.indexOf("\"") + 1, s.indexOf(","));
     data[1] = s.substring(s.indexOf(",") + 1, s.indexOf("-"));
     if (data[1].substring(0, 2).toInt() > hrs) {
-      am_pm = "PM";
+      am_pm[0] = 'P';
       hrs = data[1].substring(0, 2).toInt() - hrs;
     }
     else if (data[1].substring(0, 2).toInt() == hrs)
-      am_pm = "PM";
+      am_pm[0] = 'P';
     else if (data[1].substring(0, 2).toInt() == 0);
     else if (data[1].substring(0, 2).toInt() < hrs)
       hrs = data[1].substring(0, 2).toInt();
     display.clearDisplay();
-    display.println(F("Network Name:"));
     display.println(network);
-    display.println(F("Network Date:"));
-    display.println("  20" + data[0]);
-    display.println(F("Network Time:"));
+    display.println(F("Sig. Strength:"));
+    display.println(quality);
+    display.println(F("Date & Time:"));
+    display.println("  20" + data[0]);;
     display.println("  " + String(hrs) + data[1].substring(2, data[1].length() ) + " " + am_pm);
     display.display();
   }
@@ -290,7 +332,7 @@ void exitLoop() {
 }
 
 bool checkGPRS() {
-  Serial1.write("AT+SAPBR=2,1\r");
+  Serial1.print(F("AT+SAPBR=2,1\r"));
   if (Serial1.readString().indexOf("+SAPBR: 1,1,") != -1)
     return true;
   return false;
@@ -311,22 +353,18 @@ void connectGPRS() {
     display.clearDisplay();
     display.println(F("Initializing \nSim800L\n"));
     display.display();
-    Serial1.write("AT + CSCLK = 0\r");
+    Serial1.print(F("AT + CSCLK = 0\r"));
     Serial1.readString();
-    //Serial1.readString();
-    Serial1.write("ATE0\r");
+    Serial1.print(F("ATE0\r"));
     delay(100);
     if (Serial1.available() > 0) {
       Serial1.readString();
-      //Serial1.readString();
-      //Serial.println(F("Setting up \naccess point"));
-      Serial1.write("AT + SAPBR = 3, 1, \"APN\",\"freedompop.foggmobile.com\"\r"); // Need to be changed to your APN
+      Serial1.print(F("AT + SAPBR = 3, 1, \"APN\",\"freedompop.foggmobile.com\"\r")); // Need to be changed to your APN
       Serial1.readString();
-      //Serial1.readString();
       display.println(F("Trying to\nconnect to the\naccess point"));
       display.display();
       display.clearDisplay();
-      Serial1.write("AT+SAPBR=1,1\r");
+      Serial1.print(F("AT+SAPBR=1,1\r"));
       while (!Serial1.available());
       if (Serial1.readString().indexOf("OK") != -1) {
         display.print(F("Connected!"));
@@ -359,16 +397,15 @@ void disConnectGPRS() {
     display.clearDisplay();
     display.print(F("Disconnect \nGPRS"));
     display.display();
-    Serial1.write("AT+SAPBR=0,1\r");
+    Serial1.print(F("AT+SAPBR=0,1\r"));
     display.print(Serial1.readString());
     display.display();
     //Serial1.readString();
     delay(100);
-    Serial1.write("AT+CSCLK=2\r");
+    Serial1.print(F("AT+CSCLK=2\r"));
     display.clearDisplay();
     display.print(Serial1.readString());
     display.display();
-    //Serial1.readString();
     GPRSCon = false;
   }
 }
@@ -406,7 +443,7 @@ void restSim800() {
 void sleep24() {
   GPRSCon = false;
   digitalWrite(lcdBL, HIGH);
-  Serial1.write("AT+CPOWD=0\r");
+  Serial1.print(F("AT+CPOWD=0\r"));
   Serial1.readString();
   display.clearDisplay();
   display.display();
@@ -424,7 +461,7 @@ void toggle() {
   digitalWrite(lcdBL, !digitalRead(lcdBL));
 }
 
-bool isButtonDown(int pin) {
+bool isButtonDown(byte pin) {
   if (digitalRead(pin) == LOW) {
     delay(30);
     if (digitalRead(pin) == LOW)
@@ -436,8 +473,8 @@ bool isButtonDown(int pin) {
 
 void showMenu() {
   startMillis = currentMillis;
-  for (int i = menuStartAt; i < (menuStartAt + LCD_ROWS); i++) {
-    int markerY = (i - menuStartAt) * MENU_ROW_HEIGHT;
+  for (byte i = menuStartAt; i < (menuStartAt + LCD_ROWS); i++) {
+    byte markerY = (i - menuStartAt) * MENU_ROW_HEIGHT;
     if (i == menuPos) {
       display.setTextColor(WHITE, BLACK);
       display.fillRect(0, markerY, display.width(), MENU_ROW_HEIGHT, BLACK);
