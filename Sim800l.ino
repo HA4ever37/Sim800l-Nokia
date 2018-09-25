@@ -86,21 +86,22 @@ void loop() {
   if (isButtonDown(btnEnt) == true) {
     if (menuPos == 0) {
       String s = openURL(F("raw.githubusercontent.com/HA4ever37/Sim800l/master/Sim800.txt")); // Change the URL to your text file link
-      if (s == "ERROR" || s == "" || s == "OK\r")  {
-
+      if (s == "ERROR" || s == "")  {
         display.println(F("Something \nwent wrong!"));
         display.display();
         delay(1000);
         restSim800();
       }
       else {
-        s = s.substring(s.indexOf("\r") + 2, s.lastIndexOf("OK"));
         display.clearDisplay();
         digitalWrite(lcdBL, LOW);
-        for (byte i = 0; i < s.length(); i++) {
+        /*display.print(s);
+          for (byte i = 0; i < s.length(); i++) {
           //Serial.print(s.charAt(i));
           display.print(s.charAt(i));
-        }
+          }
+        */
+        display.print(s);
         display.display();
         digitalWrite(lcdBL, HIGH);
         delay(500);
@@ -188,6 +189,7 @@ String openURL(String string) {
     string.trim();
     Serial1.print(F("AT+HTTPTERM\r"));
     Serial1.readString();
+    string = string.substring(string.indexOf("\r") + 2, string.lastIndexOf("OK"));
     return string;
   }
 }
@@ -207,7 +209,6 @@ void locInfo(byte save) {
     delay(2000);
   }
   else {
-    display.clearDisplay();
     s = s.substring(s.indexOf(",") + 1, s.indexOf("OK"));
     s.trim();
     String data[4];
@@ -216,6 +217,7 @@ void locInfo(byte save) {
       s = s.substring(s.indexOf(",") + 1, s.length());
     }
     if (save == 0) {
+      display.clearDisplay();
       display.print(F("Dt:"));
       display.println(data[2]);
       display.print(F("Time:"));
@@ -228,32 +230,39 @@ void locInfo(byte save) {
       while (!isButtonDown(btnEnt) && !isButtonDown(btnUp) && !isButtonDown(btnDwn));
     }
     else if (save == 1) {
-      s = "{ \"Date\": \"" + data[2] + "\", \"Time\": \"" + data[3] + "\", \"Location link\": \"www.google.com/maps?q=" + data[1] + "," + data[0] + "\" }";
+      s = "{\"Date\": \"" + data[2] + "\", \"Time\": \"" + data[3] + "\", \"Location link\": \"www.google.com/maps?q=" + data[1] + "," + data[0] + "\"}";
+      s.trim();
       Serial1.print(F("AT+HTTPINIT\r"));
       Serial1.readString();
       Serial1.print(F("AT+HTTPPARA = \"CID\",1\r"));
+      Serial1.readString();
+      Serial1.print(F("AT+HTTPSSL=0 \r"));
+      Serial1.readString();
       Serial1.print(F("AT+HTTPPARA=\"URL\",\"api.jsonbin.io/b\"\r"));
       Serial1.readString();
       Serial1.print(F("AT+HTTPPARA=\"CONTENT\",\"application/json\"\r"));
       Serial1.readString();
+      // YOU MUST CHANGE the secret-key otherwise your location data will be sent to my JSON account!
       Serial1.print(F("AT+HTTPPARA=\"USERDATA\",\"secret-key: $2a$10$/4cwS1j8JzAgdbYKEDbeM.x19a0UM5C612PtEvoBv.hqtGagcY.DG\\r\\nprivate: true\"\r"));
       Serial1.readString();
       Serial1.print(F("AT+HTTPDATA="));
-      Serial1.print(String(s.length()) + ",10000\r");
+      Serial1.print(String(s.length()) + ",2000\r");
       Serial1.readString();
       Serial1.print(s + "\r");
       Serial1.readString();
       Serial1.print(F("AT+HTTPACTION=1\r"));
       Serial1.readString();
       while (!Serial1.available());
-      if (Serial1.readString().indexOf(",200,") == -1 ) {
+      s = Serial1.readString();
+      if (s.indexOf(",200,") == -1 ) {
         display.print(F("Failed to\nupload info!"));
         display.display();
+        delay(1000);
       }
       else {
-        display.print(F("Location \nuploaded!"));
-        Serial.println(F("Location \nuploaded!"));
+        display.println(F("Location \nuploaded!"));
         display.display();
+        delay(1000);
       }
       Serial1.print(F("AT+HTTPREAD\r"));
       Serial1.readString();
@@ -262,7 +271,7 @@ void locInfo(byte save) {
     }
     else if (save == 2) {
       writeEeprom("Dt:" + data[2] + "\nTime:" + data[3] + "\nLongitude:\n" + data[0] + "\nLatitude:\n" + data[1]);
-      display.print(F("Info saved \nto Eeprom!:"));
+      display.println(F("Info saved \nto Eeprom!:"));
       display.display();
       delay(2000);
     }
