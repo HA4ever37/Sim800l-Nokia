@@ -3,8 +3,8 @@ Utilizing functions of Sim800L module beyond call and sms.
 
 Features:
 * Request a text file from a URL and display the result on screen
-* Show Date & time from newwork
-* Show current Location (LBS) info
+* Show network operator info (name, signal strength, network date & network time) 
+* Show current Location (LBS) information
 * Save (to eeprom) and retrive last saved location info
 * Upload last location info to a JSON server (jsonbin.io)
 * Advanced Sleep & Wake-up functions to save power
