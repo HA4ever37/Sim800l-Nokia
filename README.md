@@ -6,12 +6,13 @@ Features:
 * Show Date & time from newwork
 * Show current Location (LBS) info
 * Save (to eeprom) and retrive last saved location info
-* Upload last location info to a JSON server 
+* Upload last location info to a JSON server (jsonbin.io)
 * Advanced Sleep & Wake-up functions to save power
 * Easy to navigate menu
 * Optimized SRAM usage
 
 Future features:
+* Scheduled location uploads
 * Get last location info from a JSON server 
 * FM radio tuner?
 
