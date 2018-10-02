@@ -43,7 +43,7 @@ void setup() {
   digitalWrite(lcdBL, LOW);
   display.begin();
   display.setContrast(50);
-  display.setRotation(2);
+  display.setRotation(2);     // My screen is flipped! :/
   display.clearDisplay();
   Serial1.begin(9600);
   //Serial.begin(9600);
@@ -87,10 +87,10 @@ void loop() {
     if (menuPos == 0) {
       String s = openURL(F("raw.githubusercontent.com/HA4ever37/Sim800l/master/Sim800.txt")); // Change the URL to your text file link
       if (s == "ERROR" || s == "")  {
-        display.println(F("Something \nwent wrong!"));
+       display.clearDisplay();
+        display.println(F("Bad request! \ntry again"));
         display.display();
-        delay(1000);
-        restSim800();
+        delay(2000);
       }
       else {
         display.clearDisplay();
@@ -432,7 +432,7 @@ void readEeprom() {
 
 void writeEeprom(String s) {
   for (int i = 0; i < s.length(); i++) {
-    EEPROM.write(i, s.charAt(i));
+    EEPROM.update(i, s.charAt(i));
   }
 }
 
