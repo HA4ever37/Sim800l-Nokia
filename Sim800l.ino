@@ -1,4 +1,5 @@
 #include <EEPROM.h>
+#include <avr/power.h>
 #include <avr/sleep.h>
 #include <avr/wdt.h>
 #include <Adafruit_GFX.h>
@@ -57,6 +58,8 @@ void setup() {
     restSim800();
   }
   GPRSCon = checkGPRS();
+  Serial1.print(F("ATE0\r"));
+  Serial1.readString();
   showMenu();
   startMillis = millis();
 }
@@ -87,7 +90,7 @@ void loop() {
     if (menuPos == 0) {
       String s = openURL(F("raw.githubusercontent.com/HA4ever37/Sim800l/master/Sim800.txt")); // Change the URL to your text file link
       if (s == "ERROR" || s == "")  {
-       display.clearDisplay();
+        display.clearDisplay();
         display.println(F("Bad request! \ntry again"));
         display.display();
         delay(2000);
@@ -111,10 +114,8 @@ void loop() {
         display.display();
       }
     }
-    else if (menuPos == 1) {
-      detachInterrupt(btnEnt);
+    else if (menuPos == 1)
       netInfo();
-    }
     else if (menuPos == 2)
       locInfo(0);
     else if (menuPos == 3)
@@ -363,8 +364,6 @@ void connectGPRS() {
     display.println(F("Initializing \nSim800L\n"));
     display.display();
     Serial1.print(F("AT + CSCLK = 0\r"));
-    Serial1.readString();
-    Serial1.print(F("ATE0\r"));
     delay(100);
     if (Serial1.available() > 0) {
       Serial1.readString();
@@ -463,7 +462,6 @@ void sleep24() {
   display.begin();
   digitalWrite(lcdBL, LOW);
   wakeUp();
-  startMillis = currentMillis;
 }
 
 void toggle() {
@@ -526,10 +524,11 @@ void wakeUp() {
     delay(2000);
     restSim800();
   }
+  Serial1.print(F("ATE0\r"));
+  Serial1.readString();
 }
 
 void pwrDown() {
-  detachInterrupt(btnEnt);
   delay(250);
   isItSleep = true;
   GPRSCon = false;
@@ -541,12 +540,18 @@ void pwrDown() {
   attachInterrupt(digitalPinToInterrupt(btnEnt), pinInterrupt, RISING);
   set_sleep_mode(SLEEP_MODE_PWR_DOWN);
   sleep_enable();
+  power_adc_disable();
+  power_usart0_disable();
+  power_usart1_disable();
+  power_spi_disable();
+  power_twi_disable();
+  power_usb_disable();
   sleep_mode();
   sleep_disable();
+  power_all_enable();
   display.begin();
   showMenu();
   digitalWrite(lcdBL, LOW);
-  startMillis = currentMillis;
 }
 
 void pinInterrupt(void) {
@@ -582,7 +587,6 @@ void myWatchdogEnable(const byte interval) {
   MCUSR = 0;                          // reset various flags
   WDTCSR |= 0b00011000;               // see docs, set WDCE, WDE
   WDTCSR =  0b01000000 | interval;    // set WDIE, and appropriate delay
-  wdt_reset();
   set_sleep_mode (SLEEP_MODE_PWR_DOWN);
   sleep_mode();            // now goes to Sleep and waits for the interrupt
 }
