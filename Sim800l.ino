@@ -1,6 +1,6 @@
 #include <EEPROM.h>
-#include <avr/power.h>
 #include <avr/sleep.h>
+#include <avr/power.h>
 #include <avr/wdt.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_PCD8544.h>
@@ -15,18 +15,16 @@
 #define LCD_ROWS  5
 #define RXLED 17
 #define TXLED 30
+#define COUNTER 2700   // auto upload sleep counter will make the device sleep for 6 hours (COUNTER * 8 seconds)
 
 Adafruit_PCD8544 display = Adafruit_PCD8544(15, 16, 9, 8, 4);
 
 unsigned long startMillis, currentMillis;
 const unsigned long period = 30000; // The value is a number in milliseconds
 bool GPRSCon, isItSleep, exitBool;
-byte menuPos = 0;
-byte menuScreen = 0;
-byte markerPos = 0;
-byte menuStartAt = 0;
+byte menuPos, menuScreen, markerPos, menuStartAt;
 const String menu[12] = {"URL Request", "Network Info", "Location Info", "Connect", "Disconnect", "Light Switch",
-                         "Power Down", "Sleep 24 Scnd", "Reset Sim800L", "Send Location" , "Save Location", "Last Saved"
+                         "Auto Upload", "Send Location", "Save Location", "Last Saved" , "Power Down", "Reset Sim800L"
                         };
 
 void setup() {
@@ -44,11 +42,10 @@ void setup() {
   digitalWrite(lcdBL, LOW);
   display.begin();
   display.setContrast(50);
-  display.setRotation(2);     // My screen is flipped! :/
+  display.setRotation(2);     // My screen is upside down! :/
   display.clearDisplay();
   Serial1.begin(9600);
   //Serial.begin(9600);
-  //while (!Serial);
   delay(8000);  // You may increase this if 8 seconds isn't enough
   while (!checkSim800()) {
     display.clearDisplay();
@@ -102,8 +99,7 @@ void loop() {
           for (byte i = 0; i < s.length(); i++) {
           //Serial.print(s.charAt(i));
           display.print(s.charAt(i));
-          }
-        */
+          }*/
         display.print(s);
         display.display();
         digitalWrite(lcdBL, HIGH);
@@ -125,20 +121,20 @@ void loop() {
     else if (menuPos == 5)
       toggle();
     else if (menuPos == 6)
-      pwrDown();
+      autoUp();
     else if (menuPos == 7)
-      sleep24();
-    else if (menuPos == 8)
-      restSim800();
-    else if (menuPos == 9)
       locInfo(1);
-    else if (menuPos == 10)
+    else if (menuPos == 8)
       locInfo(2);
-    else if (menuPos == 11)
+    else if (menuPos == 9)
       readEeprom();
+    else if (menuPos == 10)
+      pwrDown();
+    else if (menuPos == 11)
+      restSim800();
     showMenu();
     delay(100);
-    startMillis = currentMillis = millis();;
+    startMillis = currentMillis = millis();
   }
   if (currentMillis - startMillis >= period)
     pwrDown();
@@ -243,7 +239,7 @@ void locInfo(byte save) {
       Serial1.readString();
       Serial1.print(F("AT+HTTPPARA=\"CONTENT\",\"application/json\"\r"));
       Serial1.readString();
-      // YOU MUST CHANGE the secret-key otherwise your location data will be sent to my JSON account!
+      // WARNING!!!  YOU MUST CHANGE the secret-key otherwise your location data will be sent to my JSON account!
       Serial1.print(F("AT+HTTPPARA=\"USERDATA\",\"secret-key: $2a$10$/4cwS1j8JzAgdbYKEDbeM.x19a0UM5C612PtEvoBv.hqtGagcY.DG\\r\\nprivate: true\"\r"));
       Serial1.readString();
       Serial1.print(F("AT+HTTPDATA="));
@@ -278,6 +274,7 @@ void locInfo(byte save) {
     }
   }
 }
+
 void netInfo() {
   if (isItSleep) {
     wakeUp();
@@ -448,20 +445,31 @@ void restSim800() {
   GPRSCon = false;
 }
 
-void sleep24() {
-  GPRSCon = false;
-  digitalWrite(lcdBL, HIGH);
-  Serial1.print(F("AT+CPOWD=0\r"));
-  Serial1.readString();
+void autoUp() {
   display.clearDisplay();
+  display.println(F("To disable \nautoupload\nplease restart\nthe device"));
   display.display();
-  display.command( PCD8544_FUNCTIONSET | PCD8544_POWERDOWN);
-  for (byte i = 0; i < 4; i++)
-    myWatchdogEnable (0b100001);  // 8 seconds
-  //myWatchdogEnable (0b100000);  // 4 seconds
-  display.begin();
-  digitalWrite(lcdBL, LOW);
-  wakeUp();
+  delay(3000);
+  while (true) {
+    if (isItSleep) {
+      wakeUp();
+      connectGPRS();
+    }
+    locInfo(1);
+    Serial1.print(F("AT+CPOWD=0\r"));
+    Serial1.readString();
+    digitalWrite(lcdBL, HIGH);  // keep the LCD backlight off during sleep time and wakeups to reduce power consumption
+    display.clearDisplay();
+    display.display();
+    display.command( PCD8544_FUNCTIONSET | PCD8544_POWERDOWN);
+    digitalWrite(resetPin, LOW);
+    for (int i = 0; i < COUNTER; i++)
+      myWatchdogEnable (0b100001);  // 8 seconds
+    //myWatchdogEnable (0b100000);  // 4
+    power_all_enable();
+    display.begin();
+    isItSleep = true;
+  }
 }
 
 void toggle() {
@@ -540,12 +548,7 @@ void pwrDown() {
   attachInterrupt(digitalPinToInterrupt(btnEnt), pinInterrupt, RISING);
   set_sleep_mode(SLEEP_MODE_PWR_DOWN);
   sleep_enable();
-  power_adc_disable();
-  power_usart0_disable();
-  power_usart1_disable();
-  power_spi_disable();
-  power_twi_disable();
-  power_usb_disable();
+  savePower();
   sleep_mode();
   sleep_disable();
   power_all_enable();
@@ -568,8 +571,7 @@ void ledTx( boolean on) {
   }
 }
 
-void ledRx( boolean on)
-{
+void ledRx( boolean on) {
   if (on) {
     pinMode( LED_BUILTIN_RX, OUTPUT);
     digitalWrite( LED_BUILTIN_RX, LOW);
@@ -580,7 +582,7 @@ void ledRx( boolean on)
 }
 
 ISR(WDT_vect) {
-  wdt_disable();  // disable watchdog
+  wdt_disable();
 }
 
 void myWatchdogEnable(const byte interval) {
@@ -588,5 +590,39 @@ void myWatchdogEnable(const byte interval) {
   WDTCSR |= 0b00011000;               // see docs, set WDCE, WDE
   WDTCSR =  0b01000000 | interval;    // set WDIE, and appropriate delay
   set_sleep_mode (SLEEP_MODE_PWR_DOWN);
+  wdt_reset();
+  savePower();
   sleep_mode();            // now goes to Sleep and waits for the interrupt
+}
+
+void savePower() {
+  ADCSRA = 0;
+  power_adc_disable();
+  ACSR |= (1 << ACD); // disable Analog comparator, saves 4 uA
+  power_usart0_disable();
+  SPCR = 0;
+  power_spi_disable();
+  power_twi_disable();
+  power_timer0_disable();  // Do not disable if you need millis()!!!
+  power_timer1_disable();
+  power_timer3_disable();
+  PRR1 |= (uint8_t)(1 << 4);  //PRTIM4
+  power_usart1_disable();
+  // Disable the USB interface
+  USBCON &= ~(1 << USBE);
+  // Disable the VBUS transition enable bit
+  USBCON &= ~(1 << VBUSTE);
+  // Disable the VUSB pad
+  USBCON &= ~(1 << OTGPADE);
+  // Freeze the USB clock
+  USBCON &= ~(1 << FRZCLK);
+  // Disable USB pad regulator
+  UHWCON &= ~(1 << UVREGE);
+  // Clear the IVBUS Transition Interrupt flag
+  USBINT &= ~(1 << VBUSTI);
+  // Physically detact USB (by disconnecting internal pull-ups on D+ and D-)
+  UDCON |= (1 << DETACH);
+  power_usb_disable();  // Keep it here, after the USB power down
+  power_all_disable();
+  // Disable functions
 }
