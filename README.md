@@ -6,17 +6,18 @@ Features:
 * Show network operator info (name, signal strength, network date & network time) 
 * Show current Location (LBS) information
 * Save (to eeprom) and retrive last saved location info
-* Upload last location info to a JSON server (jsonbin.io)
+* Upload location info to a JSON server (jsonbin.io)
+* Scheduled location uploads
 * Advanced Sleep & Wake-up functions to save power
 * Easy to navigate menu
 * Optimized SRAM usage
 
 Future features:
-* Scheduled location uploads
 * Get last location info from a JSON server 
 * FM radio tuner?
 
-Two libraries are needed: "Adafruit_GFX" and "Adafruit_PCD8544"
+
+Two external libraries are required: "Adafruit_GFX" and "Adafruit_PCD8544"
 
 
 Needed hardware:
