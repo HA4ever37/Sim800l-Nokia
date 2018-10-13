@@ -15,7 +15,7 @@
 #define LCD_ROWS  5
 #define RXLED 17
 #define TXLED 30
-#define COUNTER 2700   // auto upload sleep counter will make the device sleep for 6 hours (COUNTER * 8 seconds)
+#define COUNTER 2522   // auto upload sleep counter will make the device sleep for 6 hours (COUNTER * 1.07 * 8 seconds)
 
 Adafruit_PCD8544 display = Adafruit_PCD8544(15, 16, 9, 8, 4);
 
@@ -52,7 +52,7 @@ void setup() {
     display.println(F("Sim800L is \nturned off or \nnot responding"));
     display.display();
     delay(2000);
-    restSim800();
+    resetSim800();
   }
   GPRSCon = checkGPRS();
   Serial1.print(F("ATE0\r"));
@@ -131,7 +131,7 @@ void loop() {
     else if (menuPos == 10)
       pwrDown();
     else if (menuPos == 11)
-      restSim800();
+      resetSim800();
     showMenu();
     delay(100);
     startMillis = currentMillis = millis();
@@ -360,11 +360,11 @@ void connectGPRS() {
     display.clearDisplay();
     display.println(F("Initializing \nSim800L\n"));
     display.display();
-    Serial1.print(F("AT + CSCLK = 0\r"));
+    Serial1.print(F("AT+CSCLK=0\r"));
     delay(100);
     if (Serial1.available() > 0) {
       Serial1.readString();
-      Serial1.print(F("AT + SAPBR = 3, 1, \"APN\",\"freedompop.foggmobile.com\"\r")); // Need to be changed to your APN
+      Serial1.print(F("AT+SAPBR=3,1,\"APN\",\"freedompop.foggmobile.com\"\r")); // Need to be changed to your APN
       Serial1.readString();
       display.println(F("Trying to\nconnect to the\naccess point"));
       display.display();
@@ -379,14 +379,14 @@ void connectGPRS() {
         display.print(F("Failed to \nconnect!"));
         display.display();
         delay(1000);
-        restSim800();
+        resetSim800();
       }
     }
     else {
       display.print(F("Failed to \nconnect!"));
       display.display();
       delay(1000);
-      restSim800();
+      resetSim800();
     }
   }
 }
@@ -432,7 +432,7 @@ void writeEeprom(String s) {
   }
 }
 
-void restSim800() {
+void resetSim800() {
   display.clearDisplay();
   display.println(F("Restarting"));
   display.display();
@@ -443,6 +443,8 @@ void restSim800() {
   digitalWrite(resetPin, HIGH);
   delay(10000);
   GPRSCon = false;
+  Serial1.print(F("ATE0\r"));
+  Serial1.readString();
 }
 
 void autoUp() {
@@ -466,6 +468,7 @@ void autoUp() {
     for (int i = 0; i < COUNTER; i++)
       myWatchdogEnable (0b100001);  // 8 seconds
     //myWatchdogEnable (0b100000);  // 4
+    sleep_disable();
     power_all_enable();
     display.begin();
     isItSleep = true;
@@ -525,15 +528,15 @@ void wakeUp() {
   display.println(F("Waking up \nSim800L"));
   display.display();
   delay(10000);
+  Serial1.print(F("ATE0\r"));
+  Serial1.readString();
   while (!checkSim800()) {
     display.clearDisplay();
     display.println(F("Sim800L is \nturned off or \nnot responding"));
     display.display();
     delay(2000);
-    restSim800();
+    resetSim800();
   }
-  Serial1.print(F("ATE0\r"));
-  Serial1.readString();
 }
 
 void pwrDown() {
