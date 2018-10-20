@@ -5,8 +5,9 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_PCD8544.h>
 
-#define resetPin 6      // Reset pin for Sim800L
 #define lcdBL 5         // LCD backlight pin
+#define resetPin 6      // Reset pin for Sim800L
+//#define pwrPin A0      // Power pin for Sim800L
 #define btnEnt 2
 #define btnUp 3
 #define btnDwn 7
@@ -33,12 +34,14 @@ void setup() {
   pinMode(btnEnt, INPUT_PULLUP);
   pinMode(lcdBL, OUTPUT);
   pinMode(resetPin, OUTPUT);
+  //pinMode(pwrPin, OUTPUT);
   pinMode(RXLED, OUTPUT);
   pinMode(TXLED, OUTPUT);
   digitalWrite(resetPin, HIGH);
   digitalWrite(RXLED, HIGH);
   digitalWrite(TXLED, HIGH);
   digitalWrite(resetPin, HIGH);
+  //digitalWrite(pwrPin, HIGH);
   digitalWrite(lcdBL, LOW);
   display.begin();
   display.setContrast(50);
@@ -55,8 +58,6 @@ void setup() {
     resetSim800();
   }
   GPRSCon = checkGPRS();
-  Serial1.print(F("ATE0\r"));
-  Serial1.readString();
   showMenu();
   startMillis = millis();
 }
@@ -143,19 +144,19 @@ void loop() {
 String openURL(String string) {
   while (!GPRSCon)
     connectGPRS();
-  Serial1.print(F("AT+HTTPINIT\r"));
   display.clearDisplay();
-  display.print(F("HTTP \nIntialization"));
+  Serial1.print(F("AT+HTTPINIT\r"));
+  display.println(F("HTTP \nIntialization\n"));
   display.display();
-  display.print(Serial1.readString());
-  display.display();
+  if (Serial1.readString().indexOf("OK") == -1)
+    return "ERROR";
   Serial1.print(F("AT+HTTPPARA=\"CID\",1\r"));
   Serial1.readString();
   display.print(F("Sending URL\nrequest"));
   display.display();
   Serial1.print(F("AT+HTTPPARA=\"URL\",\""));
   Serial1.print(string + "\"\r");
-  if (Serial1.readString().equals(F("ERROR")))
+  if (Serial1.readString().indexOf("OK") == -1)
     return "ERROR";
   display.print(Serial1.readString());
   display.display();
@@ -168,27 +169,17 @@ String openURL(String string) {
   Serial1.readString();
   while (!Serial1.available());
   Serial1.readString();
-  if (Serial1.readString().indexOf(",200,") != -1) {
-    display.println(F("Request \failed!"));
-    display.display();
-    delay(500);
+  if (Serial1.readString().indexOf(",200,") != -1)
     return "ERROR";
-  }
-  else {
-    display.println(F("Request \naccepted!\n"));
-    display.display();
-    while (Serial1.available() > 0)
-      Serial1.read();
-    display.print(F("Downloading \ndata"));
-    display.display();
-    Serial1.write("AT+HTTPREAD\r");
-    string = Serial1.readString();
-    string.trim();
-    Serial1.print(F("AT+HTTPTERM\r"));
-    Serial1.readString();
-    string = string.substring(string.indexOf("\r") + 2, string.lastIndexOf("OK"));
-    return string;
-  }
+  display.print(F("Downloading \ndata"));
+  display.display();
+  Serial1.write("AT+HTTPREAD\r");
+  string = Serial1.readString();
+  string.trim();
+  Serial1.print(F("AT+HTTPTERM\r"));
+  Serial1.readString();
+  string = string.substring(string.indexOf(": 80\r") + 6, string.lastIndexOf("OK"));
+  return string;
 }
 
 void locInfo(byte save) {
@@ -198,6 +189,7 @@ void locInfo(byte save) {
   display.println(F("Getting\nlocation info"));
   display.display();
   Serial1.print(F("AT+CIPGSMLOC=1,1\r"));
+  Serial1.readString();
   while (!Serial1.available());
   String s = Serial1.readString();
   if (s.indexOf(",") == -1) {
@@ -289,19 +281,18 @@ void netInfo() {
     network = Serial1.readString();
     //Serial.println(network);
   } while (network.indexOf("+COPS: 0,0,\"") == -1);
-  network = network.substring(network.indexOf("0,\"") + 3, network.lastIndexOf("\""));
+  network = network.substring(network.lastIndexOf(",\"") + 2, network.lastIndexOf("\""));
   exitBool = false;
   attachInterrupt(digitalPinToInterrupt(btnEnt), exitLoop, FALLING);
   while (!exitBool) {
     Serial1.print(F("AT+CSQ\r"));
     String quality = Serial1.readString();
     quality = quality.substring(quality.indexOf(": ") + 2, quality.indexOf(","));
-    //Serial.println(quality);
     if (quality.toInt() < 10)
       quality = "Poor " + quality;
     else if (quality.toInt() < 15)
       quality = "Fair " + quality;
-    if (quality.toInt() < 20)
+    else if (quality.toInt() < 20)
       quality = "Good " + quality;
     else
       quality = "Excellent " + quality;
@@ -361,26 +352,20 @@ void connectGPRS() {
     display.println(F("Initializing \nSim800L\n"));
     display.display();
     Serial1.print(F("AT+CSCLK=0\r"));
-    delay(100);
-    if (Serial1.available() > 0) {
-      Serial1.readString();
-      Serial1.print(F("AT+SAPBR=3,1,\"APN\",\"freedompop.foggmobile.com\"\r")); // Need to be changed to your APN
-      Serial1.readString();
-      display.println(F("Trying to\nconnect to the\naccess point"));
-      display.display();
-      display.clearDisplay();
-      Serial1.print(F("AT+SAPBR=1,1\r"));
-      while (!Serial1.available());
-      if (Serial1.readString().indexOf("OK") != -1) {
-        display.print(F("Connected!"));
-        GPRSCon = true;
-      }
-      else {
-        display.print(F("Failed to \nconnect!"));
-        display.display();
-        delay(1000);
-        resetSim800();
-      }
+    while (!Serial1.available());
+    Serial1.readString();
+    Serial1.print(F("AT+SAPBR=3,1,\"APN\",\"freedompop.foggmobile.com\"\r"));   // Need to be changed to your APN
+    Serial1.readString();
+    display.println(F("Trying to\nconnect to the\naccess point"));
+    display.display();
+    display.clearDisplay();
+    Serial1.print(F("ATE0\r"));
+    Serial1.readString();
+    Serial1.print(F("AT+SAPBR=1,1\r"));
+    while (!Serial1.available());
+    if (Serial1.readString().indexOf("OK") != -1) {
+      display.print(F("Connected!"));
+      GPRSCon = true;
     }
     else {
       display.print(F("Failed to \nconnect!"));
@@ -388,6 +373,8 @@ void connectGPRS() {
       delay(1000);
       resetSim800();
     }
+    Serial1.print(F("ATE1\r"));
+    Serial1.readString();
   }
 }
 
@@ -400,17 +387,13 @@ void disConnectGPRS() {
   }
   else {
     display.clearDisplay();
-    display.print(F("Disconnect \nGPRS"));
+    display.print(F("Disconnecting \nGPRS"));
     display.display();
     Serial1.print(F("AT+SAPBR=0,1\r"));
-    display.print(Serial1.readString());
-    display.display();
-    //Serial1.readString();
+    Serial1.readString();
     delay(100);
     Serial1.print(F("AT+CSCLK=2\r"));
-    display.clearDisplay();
-    display.print(Serial1.readString());
-    display.display();
+    Serial1.readString();
     GPRSCon = false;
   }
 }
@@ -443,8 +426,6 @@ void resetSim800() {
   digitalWrite(resetPin, HIGH);
   delay(10000);
   GPRSCon = false;
-  Serial1.print(F("ATE0\r"));
-  Serial1.readString();
 }
 
 void autoUp() {
@@ -464,7 +445,7 @@ void autoUp() {
     display.clearDisplay();
     display.display();
     display.command( PCD8544_FUNCTIONSET | PCD8544_POWERDOWN);
-    digitalWrite(resetPin, LOW);
+    //digitalWrite(pwrPin, LOW);
     for (int i = 0; i < COUNTER; i++)
       myWatchdogEnable (0b100001);  // 8 seconds
     //myWatchdogEnable (0b100000);  // 4
@@ -500,7 +481,6 @@ void showMenu() {
       display.setTextColor(BLACK, WHITE);
       display.fillRect(0, markerY, display.width(), MENU_ROW_HEIGHT, WHITE);
     }
-
     if (i >= MENU_LENGTH)
       continue;
     display.setCursor(2, markerY + 2);
@@ -524,12 +504,11 @@ bool checkSim800() {
 
 void wakeUp() {
   digitalWrite(resetPin, HIGH);
+  //digitalWrite(pwrPin, HIGH);
   display.clearDisplay();
   display.println(F("Waking up \nSim800L"));
   display.display();
   delay(10000);
-  Serial1.print(F("ATE0\r"));
-  Serial1.readString();
   while (!checkSim800()) {
     display.clearDisplay();
     display.println(F("Sim800L is \nturned off or \nnot responding"));
@@ -540,14 +519,14 @@ void wakeUp() {
 }
 
 void pwrDown() {
-  delay(250);
+  delay(250);   //debouncing
   isItSleep = true;
   GPRSCon = false;
   digitalWrite(lcdBL, HIGH);
   display.clearDisplay();
   display.display();
   display.command( PCD8544_FUNCTIONSET | PCD8544_POWERDOWN);
-  digitalWrite(resetPin, LOW);
+  //digitalWrite(pwrPin, LOW);
   attachInterrupt(digitalPinToInterrupt(btnEnt), pinInterrupt, RISING);
   set_sleep_mode(SLEEP_MODE_PWR_DOWN);
   sleep_enable();
