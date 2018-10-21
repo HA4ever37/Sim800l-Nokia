@@ -145,10 +145,8 @@ void loop() {
       readEeprom();
       showMenu();
     }
-    else if (menuPos == 10) {
+    else if (menuPos == 10)
       pwrDown();
-      showMenu();
-    }
     else if (menuPos == 11) {
       resetSim800();
       showMenu();
@@ -561,6 +559,8 @@ void pwrDown() {
   power_all_enable();
   display.begin();
   digitalWrite(lcdBL, LOW);
+  startMillis = currentMillis = millis();
+  showMenu();
 }
 
 void pinInterrupt(void) {
