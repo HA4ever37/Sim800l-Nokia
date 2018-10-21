@@ -6,8 +6,8 @@
 #include <Adafruit_PCD8544.h>
 
 #define lcdBL 5         // LCD backlight pin
-#define resetPin 6      // Reset pin for Sim800L
-//#define pwrPin A0      // Power pin for Sim800L
+#define resetPin 6      // Reset pin of Sim800L
+#define pwrPin A0      // controling an NPN transistor that provides 0V to GND pin of Sim800L
 #define btnEnt 2
 #define btnUp 3
 #define btnDwn 7
@@ -34,22 +34,22 @@ void setup() {
   pinMode(btnEnt, INPUT_PULLUP);
   pinMode(lcdBL, OUTPUT);
   pinMode(resetPin, OUTPUT);
-  //pinMode(pwrPin, OUTPUT);
+  pinMode(pwrPin, OUTPUT);
   pinMode(RXLED, OUTPUT);
   pinMode(TXLED, OUTPUT);
   digitalWrite(resetPin, HIGH);
   digitalWrite(RXLED, HIGH);
   digitalWrite(TXLED, HIGH);
   digitalWrite(resetPin, HIGH);
-  //digitalWrite(pwrPin, HIGH);
+  digitalWrite(pwrPin, HIGH);
   digitalWrite(lcdBL, LOW);
   display.begin();
   display.setContrast(50);
-  display.setRotation(2);     // My screen is upside down! :/
+  display.setRotation(2);     // My screen is flipped upside down! :/
   display.clearDisplay();
   Serial1.begin(9600);
   //Serial.begin(9600);
-  delay(8000);  // You may increase this if 8 seconds isn't enough
+  delay(5000);  // You may increase this if the duration isn't enough
   while (!checkSim800()) {
     display.clearDisplay();
     display.println(F("Sim800L is \nturned off or \nnot responding"));
@@ -57,6 +57,7 @@ void setup() {
     delay(2000);
     resetSim800();
   }
+  while (Serial1.readString().indexOf("Call Ready") == -1);
   GPRSCon = checkGPRS();
   showMenu();
   startMillis = millis();
@@ -67,7 +68,7 @@ void loop() {
   if (isButtonDown(btnDwn) == true) {
     if (menuPos < MENU_LENGTH - 1) {
       menuPos++;
-      if (menuPos > 3)
+      if (menuPos - menuStartAt > 3 )
         menuStartAt++;
       showMenu();
     }
@@ -77,7 +78,7 @@ void loop() {
   if (isButtonDown(btnUp) == true) {
     if (menuPos > 0) {
       menuPos--;
-      if (menuStartAt > 0)
+      if (menuPos - menuStartAt < 0 && menuStartAt != 0)
         menuStartAt--;
       showMenu();
     }
@@ -86,7 +87,7 @@ void loop() {
   }
   if (isButtonDown(btnEnt) == true) {
     if (menuPos == 0) {
-      String s = openURL(F("raw.githubusercontent.com/HA4ever37/Sim800l/master/Sim800.txt")); // Change the URL to your text file link
+      String s = openURL(F("raw.githubusercontent.com/HA4ever37/Sim800l/master/Sim800.txt"), true); // Change the URL to your text file link
       if (s == "ERROR" || s == "")  {
         display.clearDisplay();
         display.println(F("Bad request! \ntry again"));
@@ -110,30 +111,48 @@ void loop() {
         display.clearDisplay();
         display.display();
       }
+      showMenu();
     }
-    else if (menuPos == 1)
+    else if (menuPos == 1) {
       netInfo();
-    else if (menuPos == 2)
+      showMenu();
+    }
+    else if (menuPos == 2) {
       locInfo(0);
-    else if (menuPos == 3)
+      showMenu();
+    }
+    else if (menuPos == 3) {
       connectGPRS();
-    else if (menuPos == 4)
+      showMenu();
+    }
+    else if (menuPos == 4) {
       disConnectGPRS();
+      showMenu();
+    }
     else if (menuPos == 5)
       toggle();
     else if (menuPos == 6)
       autoUp();
-    else if (menuPos == 7)
+    else if (menuPos == 7) {
       locInfo(1);
-    else if (menuPos == 8)
+      showMenu();
+    }
+    else if (menuPos == 8) {
       locInfo(2);
-    else if (menuPos == 9)
+      showMenu();
+    }
+    else if (menuPos == 9) {
       readEeprom();
-    else if (menuPos == 10)
+      showMenu();
+    }
+    else if (menuPos == 10) {
       pwrDown();
-    else if (menuPos == 11)
+      showMenu();
+    }
+    else if (menuPos == 11) {
       resetSim800();
-    showMenu();
+      showMenu();
+    }
     delay(100);
     startMillis = currentMillis = millis();
   }
@@ -142,6 +161,10 @@ void loop() {
 }
 
 String openURL(String string) {
+  openURL(string, false);
+}
+
+String openURL(String string, bool ssl) {
   while (!GPRSCon)
     connectGPRS();
   display.clearDisplay();
@@ -163,8 +186,10 @@ String openURL(String string) {
   display.clearDisplay();
   Serial1.print(F("AT+HTTPPARA =\"REDIR\",1\r"));
   Serial1.readString();
-  Serial1.print(F("AT+HTTPSSL=1 \r"));
-  Serial1.readString();
+  if (ssl) {
+    Serial1.print(F("AT+HTTPSSL=1 \r"));
+    Serial1.readString();
+  }
   Serial1.print(F("AT+HTTPACTION=0\r"));
   Serial1.readString();
   while (!Serial1.available());
@@ -445,7 +470,7 @@ void autoUp() {
     display.clearDisplay();
     display.display();
     display.command( PCD8544_FUNCTIONSET | PCD8544_POWERDOWN);
-    //digitalWrite(pwrPin, LOW);
+    digitalWrite(pwrPin, LOW);
     for (int i = 0; i < COUNTER; i++)
       myWatchdogEnable (0b100001);  // 8 seconds
     //myWatchdogEnable (0b100000);  // 4
@@ -471,7 +496,6 @@ bool isButtonDown(byte pin) {
 }
 
 void showMenu() {
-  startMillis = currentMillis;
   for (byte i = menuStartAt; i < (menuStartAt + LCD_ROWS); i++) {
     byte markerY = (i - menuStartAt) * MENU_ROW_HEIGHT;
     if (i == menuPos) {
@@ -504,11 +528,11 @@ bool checkSim800() {
 
 void wakeUp() {
   digitalWrite(resetPin, HIGH);
-  //digitalWrite(pwrPin, HIGH);
+  digitalWrite(pwrPin, HIGH);
   display.clearDisplay();
   display.println(F("Waking up \nSim800L"));
   display.display();
-  delay(10000);
+  delay(5000);
   while (!checkSim800()) {
     display.clearDisplay();
     display.println(F("Sim800L is \nturned off or \nnot responding"));
@@ -516,6 +540,7 @@ void wakeUp() {
     delay(2000);
     resetSim800();
   }
+  while (Serial1.readString().indexOf("Call Ready") == -1);
 }
 
 void pwrDown() {
@@ -526,7 +551,7 @@ void pwrDown() {
   display.clearDisplay();
   display.display();
   display.command( PCD8544_FUNCTIONSET | PCD8544_POWERDOWN);
-  //digitalWrite(pwrPin, LOW);
+  digitalWrite(pwrPin, LOW);
   attachInterrupt(digitalPinToInterrupt(btnEnt), pinInterrupt, RISING);
   set_sleep_mode(SLEEP_MODE_PWR_DOWN);
   sleep_enable();
@@ -535,7 +560,6 @@ void pwrDown() {
   sleep_disable();
   power_all_enable();
   display.begin();
-  showMenu();
   digitalWrite(lcdBL, LOW);
 }
 
