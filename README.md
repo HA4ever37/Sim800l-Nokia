@@ -29,7 +29,7 @@ Needed hardware:
 * Solderless breadboard
 * 3 Push buttons
 * Jump wires
-* Optional: NPN transistor to control GND pin of the Sim800l module  
+* Optional: NPN transistor to control GND pin of the Sim800l module (to save power)
 
 
 ![alt text](https://github.com/HA4ever37/Sim800l/blob/master/Atmega32u4+PCD8544+Sim800L.jpg?raw=true)
