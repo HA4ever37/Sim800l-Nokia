@@ -8,8 +8,9 @@ Features:
 * Save (to eeprom) and retrive last saved location info
 * Upload location info to a JSON server (jsonbin.io)
 * Scheduled location uploads
+* Autosleep when idle after specific time (30 senconds by default)
 * Advanced Sleep & Wake-up functions to save power
-* Easy to navigate menu
+* Simple menu to navigate 
 * Optimized SRAM usage
 
 Future features:
@@ -28,6 +29,7 @@ Needed hardware:
 * Solderless breadboard
 * 3 Push buttons
 * Jump wires
+* Optional: NPN transistor to control GND pin of the Sim800l module  
 
 
 ![alt text](https://github.com/HA4ever37/Sim800l/blob/master/Atmega32u4+PCD8544+Sim800L.jpg?raw=true)
