@@ -49,7 +49,7 @@ void setup() {
   display.clearDisplay();
   Serial1.begin(9600);
   //Serial.begin(9600);
-  delay(5000);  // You may increase this if the duration isn't enough
+  delay(4000);  // You may increase this if the duration isn't enough
   while (!checkSim800()) {
     display.clearDisplay();
     display.println(F("Sim800L is \nturned off or \nnot responding"));
@@ -57,8 +57,7 @@ void setup() {
     delay(2000);
     resetSim800();
   }
-  while (Serial1.readString().indexOf("Call Ready") == -1);
-  GPRSCon = checkGPRS();
+  waitToReg();
   showMenu();
   startMillis = millis();
 }
@@ -97,8 +96,7 @@ void loop() {
       else {
         display.clearDisplay();
         digitalWrite(lcdBL, LOW);
-        /*display.print(s);
-          for (byte i = 0; i < s.length(); i++) {
+        /*for (byte i = 0; i < s.length(); i++) {
           //Serial.print(s.charAt(i));
           display.print(s.charAt(i));
           }*/
@@ -158,6 +156,12 @@ void loop() {
     pwrDown();
 }
 
+void waitToReg() {
+  do {
+    Serial1.print(F("AT+COPS?\r"));
+  } while (Serial1.readString().indexOf("+COPS: 0,0,\"") == -1);
+}
+
 String openURL(String string) {
   openURL(string, false);
 }
@@ -170,7 +174,7 @@ String openURL(String string, bool ssl) {
   display.println(F("HTTP \nIntialization\n"));
   display.display();
   if (Serial1.readString().indexOf("OK") == -1)
-    return "ERROR";
+    return;
   Serial1.print(F("AT+HTTPPARA=\"CID\",1\r"));
   Serial1.readString();
   display.print(F("Sending URL\nrequest"));
@@ -178,14 +182,18 @@ String openURL(String string, bool ssl) {
   Serial1.print(F("AT+HTTPPARA=\"URL\",\""));
   Serial1.print(string + "\"\r");
   if (Serial1.readString().indexOf("OK") == -1)
-    return "ERROR";
+    return;
   display.print(Serial1.readString());
   display.display();
   display.clearDisplay();
-  Serial1.print(F("AT+HTTPPARA =\"REDIR\",1\r"));
+  Serial1.print(F("AT+HTTPPARA=\"REDIR\",1\r"));
   Serial1.readString();
   if (ssl) {
-    Serial1.print(F("AT+HTTPSSL=1 \r"));
+    Serial1.print(F("AT+HTTPSSL=1\r"));
+    Serial1.readString();
+  }
+  else {
+    Serial1.print(F("AT+HTTPSSL=0\r"));
     Serial1.readString();
   }
   Serial1.print(F("AT+HTTPACTION=0\r"));
@@ -193,15 +201,16 @@ String openURL(String string, bool ssl) {
   while (!Serial1.available());
   Serial1.readString();
   if (Serial1.readString().indexOf(",200,") != -1)
-    return "ERROR";
+    return;
   display.print(F("Downloading \ndata"));
   display.display();
-  Serial1.write("AT+HTTPREAD\r");
+  Serial1.print(F("AT+HTTPREAD\r"));
   string = Serial1.readString();
   string.trim();
   Serial1.print(F("AT+HTTPTERM\r"));
   Serial1.readString();
-  string = string.substring(string.indexOf(": 80\r") + 6, string.lastIndexOf("OK"));
+  string = string.substring(string.indexOf("\r") + 2, string.lastIndexOf("OK"));
+  string = string.substring(string.indexOf("\r") + 2, string.length() - 1);
   return string;
 }
 
@@ -209,7 +218,7 @@ void locInfo(byte save) {
   while (!GPRSCon)
     connectGPRS();
   display.clearDisplay();
-  display.println(F("Getting\nlocation info"));
+  display.println(F("Getting\nlocation info\n"));
   display.display();
   Serial1.print(F("AT+CIPGSMLOC=1,1\r"));
   Serial1.readString();
@@ -395,6 +404,7 @@ void connectGPRS() {
       display.display();
       delay(1000);
       resetSim800();
+      waitToReg();
     }
     Serial1.print(F("ATE1\r"));
     Serial1.readString();
@@ -442,13 +452,11 @@ void resetSim800() {
   display.clearDisplay();
   display.println(F("Restarting"));
   display.display();
-  Serial1.flush();
-  //Serial.flush();
   digitalWrite(resetPin, LOW);
   delay(100);
   digitalWrite(resetPin, HIGH);
-  delay(10000);
   GPRSCon = false;
+  delay(4000);
 }
 
 void autoUp() {
@@ -514,7 +522,7 @@ void showMenu() {
 bool checkSim800() {
   while (Serial1.available() > 0)
     Serial1.read();
-  Serial1.write("AT\r");
+  Serial1.print(F("AT\r"));
   delay(100);
   if (Serial1.available() > 0) {
     Serial1.read();
@@ -530,7 +538,7 @@ void wakeUp() {
   display.clearDisplay();
   display.println(F("Waking up \nSim800L"));
   display.display();
-  delay(5000);
+  delay(4000);
   while (!checkSim800()) {
     display.clearDisplay();
     display.println(F("Sim800L is \nturned off or \nnot responding"));
@@ -538,7 +546,7 @@ void wakeUp() {
     delay(2000);
     resetSim800();
   }
-  while (Serial1.readString().indexOf("Call Ready") == -1);
+  waitToReg();
 }
 
 void pwrDown() {
