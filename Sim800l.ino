@@ -21,12 +21,12 @@
 Adafruit_PCD8544 display = Adafruit_PCD8544(15, 16, 9, 8, 4);
 
 unsigned long startMillis, currentMillis;
-const unsigned long period = 30000; // The value is a number in milliseconds
+const unsigned long period PROGMEM = 30000; // The value is a number in milliseconds
 bool GPRSCon, isItSleep, exitBool;
 byte menuPos, menuScreen, markerPos, menuStartAt;
-const String menu[12] = {"URL Request", "Network Info", "Location Info", "Connect", "Disconnect", "Light Switch",
-                         "Auto Upload", "Send Location", "Save Location", "Last Saved" , "Power Down", "Reset Sim800L"
-                        };
+const String menu[12] PROGMEM = {"URL Request", "Network Info", "Location Info", "Connect", "Disconnect", "Light Switch",
+                                 "Auto Upload", "Send Location", "Save Location", "Last Saved" , "Power Down", "Reset Sim800L"
+                                };
 
 void setup() {
   pinMode(btnUp, INPUT_PULLUP);
@@ -157,13 +157,13 @@ void loop() {
 }
 
 void waitToReg() {
+    display.clearDisplay();
+  Serial1.print(F("AT+HTTPINIT\r"));
+  display.println(F("Waiting to \nregister sim \ncard"));
+  display.display();
   do {
     Serial1.print(F("AT+COPS?\r"));
   } while (Serial1.readString().indexOf("+COPS: 0,0,\"") == -1);
-}
-
-String openURL(String string) {
-  openURL(string, false);
 }
 
 String openURL(String string, bool ssl) {
@@ -255,7 +255,7 @@ void locInfo(byte save) {
       s.trim();
       Serial1.print(F("AT+HTTPINIT\r"));
       Serial1.readString();
-      Serial1.print(F("AT+HTTPPARA = \"CID\",1\r"));
+      Serial1.print(F("AT+HTTPPARA=\"CID\",1\r"));
       Serial1.readString();
       Serial1.print(F("AT+HTTPSSL=0 \r"));
       Serial1.readString();
@@ -637,6 +637,6 @@ void savePower() {
   // Physically detact USB (by disconnecting internal pull-ups on D+ and D-)
   UDCON |= (1 << DETACH);
   power_usb_disable();  // Keep it here, after the USB power down
-  power_all_disable();
   // Disable functions
+  power_all_disable();
 }
