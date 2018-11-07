@@ -11,7 +11,6 @@
 #define btnEnt 2
 #define btnUp 3
 #define btnDwn 7
-#define MENU_LENGTH 12
 #define MENU_ROW_HEIGHT 11
 #define LCD_ROWS  5
 #define RXLED 17
@@ -24,9 +23,11 @@ unsigned long startMillis, currentMillis;
 const unsigned long period PROGMEM = 30000; // The value is a number in milliseconds
 bool GPRSCon, isItSleep, exitBool;
 byte menuPos, menuScreen, markerPos, menuStartAt;
-const String menu[12] PROGMEM = {"URL Request", "Network Info", "Location Info", "Connect", "Disconnect", "Light Switch",
-                                 "Auto Upload", "Send Location", "Save Location", "Last Saved" , "Power Down", "Reset Sim800L"
+const String menu[13] PROGMEM = {"URL Request", "Network Info", "Location Info", "Connect", "Disconnect", "Light Switch",
+                                 "Auto Upload", "Send Location", "Save Location", "Last Saved" , "Power Down", "Reset Sim800L",
+                                 "Debug Mode"
                                 };
+byte MENU_LENGTH =  sizeof(menu) / sizeof(menu[0]);
 
 void setup() {
   pinMode(btnUp, INPUT_PULLUP);
@@ -147,6 +148,10 @@ void loop() {
       pwrDown();
     else if (menuPos == 11) {
       resetSim800();
+      showMenu();
+    }
+    else if (menuPos == 12) {
+      debugMode();
       showMenu();
     }
     delay(100);
@@ -348,8 +353,8 @@ void netInfo() {
     display.println(F("Sig. Strength:"));
     display.println(quality);
     display.println(F("Date & Time:"));
-    display.println("  20" + data[0]);;
-    display.println("  " + String(hrs) + data[1].substring(2, data[1].length() ) + " " + am_pm);
+    display.println("20" + data[0]);;
+    display.println(String(hrs) + data[1].substring(2, data[1].length() ) + " " + am_pm);
     display.display();
   }
 }
@@ -465,10 +470,8 @@ void autoUp() {
   display.display();
   delay(3000);
   while (true) {
-    if (isItSleep) {
-      wakeUp();
+    if (isItSleep)
       connectGPRS();
-    }
     locInfo(1);
     Serial1.print(F("AT+CPOWD=0\r"));
     Serial1.readString();
@@ -566,10 +569,31 @@ void pwrDown() {
   sleep_mode();
   sleep_disable();
   power_all_enable();
+  const String menu[12] PROGMEM = {"URL Request", "Network Info", "Location Info", "Connect", "Disconnect", "Light Switch",
+                                   "Auto Upload", "Send Location", "Save Location", "Last Saved" , "Power Down", "Reset Sim800L"
+                                  };
+  MENU_LENGTH =  sizeof(menu) / sizeof(menu[0]);
   display.begin();
   digitalWrite(lcdBL, LOW);
   startMillis = currentMillis = millis();
   showMenu();
+}
+
+void debugMode() {
+  display.clearDisplay();
+  display.println(F("Press enter to\nexit debug \nmode"));
+  display.display();
+  exitBool = false;
+  delay(250);
+  attachInterrupt(digitalPinToInterrupt(btnEnt), exitLoop, FALLING);
+  while (!exitBool) {
+    if (Serial.available()) {      // If anything comes in Serial (USB),
+      Serial1.write(Serial.read());   // read it and send it out Serial1 (pins 0 & 1)
+    }
+    if (Serial1.available()) {     // If anything comes in Serial1 (pins 0 & 1)
+      Serial.write(Serial1.read());   // read it and send it out Serial (USB)
+    }
+  }
 }
 
 void pinInterrupt(void) {
