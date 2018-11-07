@@ -157,7 +157,7 @@ void loop() {
 }
 
 void waitToReg() {
-    display.clearDisplay();
+  display.clearDisplay();
   Serial1.print(F("AT+HTTPINIT\r"));
   display.println(F("Waiting to \nregister sim \ncard"));
   display.display();
@@ -386,7 +386,7 @@ void connectGPRS() {
     Serial1.print(F("AT+CSCLK=0\r"));
     while (!Serial1.available());
     Serial1.readString();
-    Serial1.print(F("AT+SAPBR=3,1,\"APN\",\"freedompop.foggmobile.com\"\r"));   // Need to be changed to your APN
+    Serial1.print(F("AT+SAPBR=3,1,\"APN\",\"pwg\"\r"));   // Need to be changed to your APN
     Serial1.readString();
     display.println(F("Trying to\nconnect to the\naccess point"));
     display.display();
@@ -488,7 +488,8 @@ void autoUp() {
 }
 
 void toggle() {
-  digitalWrite(lcdBL, !digitalRead(lcdBL));
+  if (isButtonDown(btnEnt))
+    digitalWrite(lcdBL, !digitalRead(lcdBL));
 }
 
 bool isButtonDown(byte pin) {
