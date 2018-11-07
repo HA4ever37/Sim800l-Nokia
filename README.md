@@ -8,6 +8,7 @@ Features:
 * Save (to eeprom) and retrive last saved location info
 * Upload location info to a JSON server (jsonbin.io)
 * Scheduled location uploads
+* Serial debugging a.k.a. SerialPassthrough
 * Autosleep when idle after specific time (30 senconds by default)
 * Advanced Sleep & Wake-up functions to save power
 * Simple menu to navigate 
