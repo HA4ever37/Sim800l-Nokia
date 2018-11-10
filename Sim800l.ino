@@ -12,7 +12,7 @@
 #define btnUp 3
 #define btnDwn 7
 #define MENU_ROW_HEIGHT 11
-#define LCD_ROWS  5
+#define LCD_ROWS 5
 #define RXLED 17
 #define TXLED 30
 #define COUNTER 2522   // auto upload sleep counter will make the device sleep for 6 hours (COUNTER * 1.07 * 8 seconds)
@@ -23,10 +23,10 @@ unsigned long startMillis, currentMillis;
 const unsigned long period PROGMEM = 30000; // The value is a number in milliseconds
 bool GPRSCon, isItSleep, exitBool;
 byte menuPos, menuScreen, markerPos, menuStartAt;
-const String menu[13] PROGMEM = {"URL Request", "Network Info", "Location Info", "Connect", "Disconnect", "Light Switch",
-                                 "Auto Upload", "Send Location", "Save Location", "Last Saved" , "Power Down", "Reset Sim800L",
-                                 "Debug Mode"
-                                };
+const char* const menu[13] PROGMEM  = {"URL Request", "Network Info", "Location Info", "Connect", "Disconnect", "Light Switch",
+                                       "Auto Upload", "Send Location", "Save Location", "Last Saved" , "Power Down", "Reset Sim800L",
+                                       "Debug Mode"
+                                      };
 byte MENU_LENGTH =  sizeof(menu) / sizeof(menu[0]);
 
 void setup() {
@@ -45,11 +45,8 @@ void setup() {
   digitalWrite(pwrPin, HIGH);
   digitalWrite(lcdBL, LOW);
   display.begin();
-  display.setContrast(50);
   display.setRotation(2);     // My screen is flipped upside down! :/
   display.clearDisplay();
-  Serial1.begin(9600);
-  //Serial.begin(9600);
   delay(4000);  // You may increase this if the duration isn't enough
   while (!checkSim800()) {
     display.clearDisplay();
@@ -438,7 +435,7 @@ void disConnectGPRS() {
 
 void readEeprom() {
   String s;
-  for (int i = 0; i < EEPROM.length(); i++)
+  for (int i = 0; EEPROM.read(i) != 0 && i < EEPROM.length(); i++)
     s += (char)EEPROM.read(i);
   display.clearDisplay();
   display.print(s);
@@ -448,7 +445,7 @@ void readEeprom() {
 }
 
 void writeEeprom(String s) {
-  for (int i = 0; i < s.length(); i++) {
+  for (int i = 0; i < s.length() && i < EEPROM.length(); i++) {
     EEPROM.update(i, s.charAt(i));
   }
 }
@@ -511,19 +508,21 @@ void showMenu() {
     if (i == menuPos) {
       display.setTextColor(WHITE, BLACK);
       display.fillRect(0, markerY, display.width(), MENU_ROW_HEIGHT, BLACK);
-    } else {
+    }
+    else {
       display.setTextColor(BLACK, WHITE);
       display.fillRect(0, markerY, display.width(), MENU_ROW_HEIGHT, WHITE);
     }
     if (i >= MENU_LENGTH)
       continue;
-    display.setCursor(2, markerY + 2);
-    display.print(menu[i]);
+    display.setCursor(3, markerY + 2);
+    display.print((char*)pgm_read_word(&(menu[i])));
   }
   display.display();
 }
 
 bool checkSim800() {
+  Serial1.begin(9600);
   while (Serial1.available() > 0)
     Serial1.read();
   Serial1.print(F("AT\r"));
@@ -569,10 +568,7 @@ void pwrDown() {
   sleep_mode();
   sleep_disable();
   power_all_enable();
-  const String menu[12] PROGMEM = {"URL Request", "Network Info", "Location Info", "Connect", "Disconnect", "Light Switch",
-                                   "Auto Upload", "Send Location", "Save Location", "Last Saved" , "Power Down", "Reset Sim800L"
-                                  };
-  MENU_LENGTH =  sizeof(menu) / sizeof(menu[0]);
+  MENU_LENGTH =  12;
   display.begin();
   digitalWrite(lcdBL, LOW);
   startMillis = currentMillis = millis();
@@ -580,6 +576,7 @@ void pwrDown() {
 }
 
 void debugMode() {
+  Serial.begin(9600);
   display.clearDisplay();
   display.println(F("Press enter to\nexit debug \nmode"));
   display.display();
