@@ -165,7 +165,7 @@ void waitToReg() {
   display.display();
   do {
     Serial1.print(F("AT+COPS?\r"));
-  } while (Serial1.readString().indexOf("+COPS: 0,0,\"") == -1);
+  } while (Serial1.readString().indexOf(F("+COPS: 0,0,\"")) == -1);
 }
 
 String openURL(String string, bool ssl) {
@@ -175,7 +175,7 @@ String openURL(String string, bool ssl) {
   Serial1.print(F("AT+HTTPINIT\r"));
   display.println(F("HTTP \nIntialization\n"));
   display.display();
-  if (Serial1.readString().indexOf("OK") == -1)
+  if (Serial1.readString().indexOf(F("OK")) == -1)
     return;
   Serial1.print(F("AT+HTTPPARA=\"CID\",1\r"));
   Serial1.readString();
@@ -183,7 +183,7 @@ String openURL(String string, bool ssl) {
   display.display();
   Serial1.print(F("AT+HTTPPARA=\"URL\",\""));
   Serial1.print(string + "\"\r");
-  if (Serial1.readString().indexOf("OK") == -1)
+  if (Serial1.readString().indexOf(F("OK")) == -1)
     return;
   display.print(Serial1.readString());
   display.display();
@@ -202,7 +202,7 @@ String openURL(String string, bool ssl) {
   Serial1.readString();
   while (!Serial1.available());
   Serial1.readString();
-  if (Serial1.readString().indexOf(",200,") != -1)
+  if (Serial1.readString().indexOf(F(",200,")) != -1)
     return;
   display.print(F("Downloading \ndata"));
   display.display();
@@ -211,8 +211,8 @@ String openURL(String string, bool ssl) {
   string.trim();
   Serial1.print(F("AT+HTTPTERM\r"));
   Serial1.readString();
-  string = string.substring(string.indexOf("\r") + 2, string.lastIndexOf("OK"));
-  string = string.substring(string.indexOf("\r") + 2, string.length() - 1);
+  string = string.substring(string.indexOf(F("\r")) + 2, string.lastIndexOf(F("OK")));
+  string = string.substring(string.indexOf(F("\r")) + 2, string.length() - 1);
   return string;
 }
 
@@ -226,18 +226,18 @@ void locInfo(byte save) {
   Serial1.readString();
   while (!Serial1.available());
   String s = Serial1.readString();
-  if (s.indexOf(",") == -1) {
+  if (s.indexOf(F(",")) == -1) {
     display.println(F("Failed to \nget info!"));
     display.display();
     delay(2000);
   }
   else {
-    s = s.substring(s.indexOf(",") + 1, s.indexOf("OK"));
+    s = s.substring(s.indexOf(F(",")) + 1, s.indexOf(F("OK")));
     s.trim();
     String data[4];
     for (byte i = 0; i < 4; i++) {
-      data[i] = s.substring(0, s.indexOf(","));
-      s = s.substring(s.indexOf(",") + 1, s.length());
+      data[i] = s.substring(0, s.indexOf(F(",")));
+      s = s.substring(s.indexOf(F(",")) + 1, s.length());
     }
     if (save == 0) {
       display.clearDisplay();
@@ -253,8 +253,10 @@ void locInfo(byte save) {
       while (!isButtonDown(btnEnt) && !isButtonDown(btnUp) && !isButtonDown(btnDwn));
     }
     else if (save == 1) {
+      display.print(F("Connecing to\nupload server"));
+      display.display();
+      display.clearDisplay();
       s = "{\"Date\": \"" + data[2] + "\", \"Time\": \"" + data[3] + "\", \"Location link\": \"www.google.com/maps?q=" + data[1] + "," + data[0] + "\"}";
-      s.trim();
       Serial1.print(F("AT+HTTPINIT\r"));
       Serial1.readString();
       Serial1.print(F("AT+HTTPPARA=\"CID\",1\r"));
@@ -277,15 +279,13 @@ void locInfo(byte save) {
       Serial1.readString();
       while (!Serial1.available());
       s = Serial1.readString();
-      if (s.indexOf(",200,") == -1 ) {
+      if (s.indexOf(F(",200,")) == -1 ) {
         display.print(F("Failed to\nupload info!"));
         display.display();
-        delay(1000);
       }
       else {
         display.println(F("Location \nuploaded!"));
         display.display();
-        delay(1000);
       }
       Serial1.print(F("AT+HTTPREAD\r"));
       Serial1.readString();
@@ -314,14 +314,14 @@ void netInfo() {
     Serial1.print(F("AT+COPS?\r"));
     network = Serial1.readString();
     //Serial.println(network);
-  } while (network.indexOf("+COPS: 0,0,\"") == -1);
-  network = network.substring(network.lastIndexOf(",\"") + 2, network.lastIndexOf("\""));
+  } while (network.indexOf(F("+COPS: 0,0,\"")) == -1);
+  network = network.substring(network.lastIndexOf(F(",\"")) + 2, network.lastIndexOf(F("\"")));
   exitBool = false;
   attachInterrupt(digitalPinToInterrupt(btnEnt), exitLoop, FALLING);
   while (!exitBool) {
     Serial1.print(F("AT+CSQ\r"));
     String quality = Serial1.readString();
-    quality = quality.substring(quality.indexOf(": ") + 2, quality.indexOf(","));
+    quality = quality.substring(quality.indexOf(F(": ")) + 2, quality.indexOf(F(",")));
     if (quality.toInt() < 10)
       quality = "Poor " + quality;
     else if (quality.toInt() < 15)
@@ -334,8 +334,8 @@ void netInfo() {
     String s = Serial1.readString();
     char am_pm[] = "AM";
     byte hrs = 12;
-    data[0] = s.substring(s.indexOf("\"") + 1, s.indexOf(","));
-    data[1] = s.substring(s.indexOf(",") + 1, s.indexOf("-"));
+    data[0] = s.substring(s.indexOf(F("\"")) + 1, s.indexOf(F(",")));
+    data[1] = s.substring(s.indexOf(F(",")) + 1, s.indexOf(F("-")));
     if (data[1].substring(0, 2).toInt() > hrs) {
       am_pm[0] = 'P';
       hrs = data[1].substring(0, 2).toInt() - hrs;
@@ -350,7 +350,8 @@ void netInfo() {
     display.println(F("Sig. Strength:"));
     display.println(quality);
     display.println(F("Date & Time:"));
-    display.println("20" + data[0]);;
+    display.print(F("20"));
+    display.println(data[0]);
     display.println(String(hrs) + data[1].substring(2, data[1].length() ) + " " + am_pm);
     display.display();
   }
@@ -365,7 +366,7 @@ void exitLoop() {
 
 bool checkGPRS() {
   Serial1.print(F("AT+SAPBR=2,1\r"));
-  if (Serial1.readString().indexOf("+SAPBR: 1,1,") != -1)
+  if (Serial1.readString().indexOf(F("+SAPBR: 1,1,")) != -1)
     return true;
   return false;
 }
@@ -397,7 +398,7 @@ void connectGPRS() {
     Serial1.readString();
     Serial1.print(F("AT+SAPBR=1,1\r"));
     while (!Serial1.available());
-    if (Serial1.readString().indexOf("OK") != -1) {
+    if (Serial1.readString().indexOf(F("OK")) != -1) {
       display.print(F("Connected!"));
       GPRSCon = true;
     }
