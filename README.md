@@ -7,7 +7,7 @@ Features:
 * Show current Location (LBS) information
 * Save (to eeprom) and retrive last saved location info
 * Upload location info to a JSON server (jsonbin.io)
-* Scheduled location uploads
+* Scheduled location uploads (every 6 hours by default)
 * Serial debugging a.k.a. SerialPassthrough
 * Autosleep when idle after specific time (30 senconds by default)
 * Advanced Sleep & Wake-up functions to save power
