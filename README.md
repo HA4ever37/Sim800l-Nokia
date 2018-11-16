@@ -1,4 +1,4 @@
-# Sim800l
+# Sim800l Nokia
 Utilizing functions of Sim800L module beyond call and sms.
 
 Features:
