@@ -32,5 +32,5 @@ Needed hardware:
 * Jump wires
 * Optional: NPN transistor to control GND pin of the Sim800l module (to save power)
 
-
+![alt text](https://raw.githubusercontent.com/HA4ever37/Sim800l-Nokia/master/Sim800l_bb.png)
 ![alt text](https://github.com/HA4ever37/Sim800l/blob/master/Atmega32u4+PCD8544+Sim800L.jpg?raw=true)
