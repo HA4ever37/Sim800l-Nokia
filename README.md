@@ -7,7 +7,7 @@ Features:
 * Show current Location (LBS) information
 * Save (to eeprom) and retrive last saved location info
 * Upload location info to a JSON server (jsonbin.io)
-* Scheduled location uploads
+* Scheduled location uploads (every 6 hours by default)
 * Serial debugging a.k.a. SerialPassthrough
 * Autosleep when idle after specific time (30 senconds by default)
 * Advanced Sleep & Wake-up functions to save power
@@ -30,7 +30,7 @@ Needed hardware:
 * Solderless breadboard
 * 3 Push buttons
 * Jump wires
-* Optional: NPN transistor to control GND pin of the Sim800l module (to save power)
+* Optional: NPN transistor and a resistor to control GND pin of the Sim800l module (to save power)
 
-
+![alt text](https://raw.githubusercontent.com/HA4ever37/Sim800l-Nokia/master/Sim800l_bb.png)
 ![alt text](https://github.com/HA4ever37/Sim800l/blob/master/Atmega32u4+PCD8544+Sim800L.jpg?raw=true)
