@@ -17,7 +17,7 @@
 #define TXLED 30
 #define COUNTER 2522   // auto upload sleep counter will make the device sleep for 6 hours (COUNTER * 1.07 * 8 seconds)
 
-Adafruit_PCD8544 display = Adafruit_PCD8544(15, 16, 9, 8, 4);
+Adafruit_PCD8544 display = Adafruit_PCD8544(9, 8, 4);
 
 unsigned long startMillis, currentMillis;
 const unsigned long period PROGMEM = 30000; // The value is a number in milliseconds
