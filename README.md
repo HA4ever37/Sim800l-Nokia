@@ -8,14 +8,14 @@ Features:
 * Save (to eeprom) and retrive last saved location info
 * Upload location info to a JSON server (jsonbin.io)
 * Scheduled location uploads (every 6 hours by default)
+* Show weather info of your current location (using OpenWeatherMap API)
 * Serial debugging a.k.a. SerialPassthrough
 * Autosleep when idle after specific time (30 senconds by default)
 * Advanced Sleep & Wake-up functions to save power
 * Simple menu to navigate 
-* Optimized SRAM usage
+* Optimized SRAM usage (more than 50% is available for local variables)
 
 Future features:
-* Get last location info from a JSON server 
 * FM radio tuner?
 
 
