@@ -23,9 +23,9 @@ unsigned long startMillis, currentMillis;
 const unsigned long period PROGMEM = 30000; // The value is a number in milliseconds
 bool GPRSCon, isItSleep, exitBool;
 byte menuPos, menuScreen, markerPos, menuStartAt;
-const char* const menu[13] PROGMEM  = {"URL Request", "Network Info", "Location Info", "Connect", "Disconnect", "Light Switch",
-                                       "Auto Upload", "Send Location", "Save Location", "Last Saved" , "Power Down", "Reset Sim800L",
-                                       "Debug Mode"
+const char* const menu[14] PROGMEM  = {"URL Request", "Network Info", "Weather Info", "Location Info", "Save Location",
+                                       "Last Saved" , "Send Location", "Auto Upload", "Connect", "Disconnect",
+                                       "Light Switch", "Power Down", "Reset Sim800L", "Debug Mode"
                                       };
 byte MENU_LENGTH =  sizeof(menu) / sizeof(menu[0]);
 
@@ -84,7 +84,7 @@ void loop() {
   }
   if (isButtonDown(btnEnt) == true) {
     if (menuPos == 0) {
-      String s = openURL(F("raw.githubusercontent.com/HA4ever37/Sim800l/master/Sim800.txt"), true); // Change the URL to your text file link
+      const String s = openURL(F("raw.githubusercontent.com/HA4ever37/Sim800l/master/Sim800.txt"), true); // Change the URL to your text file link
       if (s == "ERROR" || s == "")  {
         display.clearDisplay();
         display.println(F("Bad request! \ntry again"));
@@ -92,6 +92,8 @@ void loop() {
         delay(2000);
       }
       else {
+        s = s.substring(s.indexOf(F("\r")) + 2, s.lastIndexOf(F("OK")));
+        s = s.substring(s.indexOf(F("\r")) + 2, s.length() - 1);
         display.clearDisplay();
         digitalWrite(lcdBL, LOW);
         /*for (byte i = 0; i < s.length(); i++) {
@@ -104,8 +106,6 @@ void loop() {
         delay(500);
         digitalWrite(lcdBL, LOW);
         while (!isButtonDown(btnEnt) && !isButtonDown(btnUp) && !isButtonDown(btnDwn));
-        display.clearDisplay();
-        display.display();
       }
       showMenu();
     }
@@ -114,40 +114,63 @@ void loop() {
       showMenu();
     }
     else if (menuPos == 2) {
-      locInfo(0);
+      const String s = openURL(locInfo(3), false);
+      display.clearDisplay();
+      display.println(s.substring(s.indexOf(F("description\":\"")) + 14, s.indexOf(F("\",\"icon"))));
+      display.print(F("Temp:"));
+      display.print(s.substring(s.indexOf(F("temp\":")) + 6, s.indexOf(F(",\"pressure"))));
+      display.println(F(" C"));
+      display.print(F("Min:"));
+      display.print(s.substring(s.indexOf(F("p_min\":")) + 7, s.indexOf(F(",\"temp_ma"))));
+      display.println(F(" C"));
+      display.print(F("Max:"));
+      display.print(s.substring(s.indexOf(F("p_max\":")) + 7, s.indexOf(F("},\"vis"))));
+      display.println(F(" C"));
+      display.print(F("Humidity:"));
+      display.print(s.substring(s.indexOf(F("humidity\":")) + 10, s.indexOf(F(",\"temp_"))));
+      display.println(F("%"));
+      display.print(F("Wind:"));
+      display.print(s.substring(s.indexOf(F("speed\":")) + 7, s.indexOf(F(",\"deg"))));
+      display.print(F(" m/s"));
+      display.display();
+      while (!isButtonDown(btnEnt) && !isButtonDown(btnUp) && !isButtonDown(btnDwn));
       showMenu();
     }
     else if (menuPos == 3) {
-      connectGPRS();
+      locInfo(0);
       showMenu();
     }
     else if (menuPos == 4) {
-      disConnectGPRS();
-      showMenu();
-    }
-    else if (menuPos == 5)
-      toggle();
-    else if (menuPos == 6)
-      autoUp();
-    else if (menuPos == 7) {
-      locInfo(1);
-      showMenu();
-    }
-    else if (menuPos == 8) {
       locInfo(2);
       showMenu();
     }
-    else if (menuPos == 9) {
+    else if (menuPos == 5) {
       readEeprom();
       showMenu();
     }
+    else if (menuPos == 6) {
+      locInfo(1);
+      showMenu();
+    }
+    else if (menuPos == 7)
+      autoUp();
+    else if (menuPos == 8) {
+      connectGPRS();
+      showMenu();
+    }
+    else if (menuPos == 9) {
+      disConnectGPRS();
+      showMenu();
+    }
     else if (menuPos == 10)
+      toggle();
+    else if (menuPos == 11)
       pwrDown();
-    else if (menuPos == 11) {
+    else if (menuPos == 12) {
       resetSim800();
       showMenu();
     }
-    else if (menuPos == 12) {
+    else if (menuPos == 13) {
       debugMode();
       showMenu();
     }
@@ -211,12 +234,10 @@ String openURL(String string, bool ssl) {
   string.trim();
   Serial1.print(F("AT+HTTPTERM\r"));
   Serial1.readString();
-  string = string.substring(string.indexOf(F("\r")) + 2, string.lastIndexOf(F("OK")));
-  string = string.substring(string.indexOf(F("\r")) + 2, string.length() - 1);
   return string;
 }
 
-void locInfo(byte save) {
+String locInfo(byte save) {
   while (!GPRSCon)
     connectGPRS();
   display.clearDisplay();
@@ -234,7 +255,7 @@ void locInfo(byte save) {
   else {
     s = s.substring(s.indexOf(F(",")) + 1, s.indexOf(F("OK")));
     s.trim();
-    String data[4];
+    const String data[4];
     for (byte i = 0; i < 4; i++) {
       data[i] = s.substring(0, s.indexOf(F(",")));
       s = s.substring(s.indexOf(F(",")) + 1, s.length());
@@ -267,7 +288,7 @@ void locInfo(byte save) {
       Serial1.readString();
       Serial1.print(F("AT+HTTPPARA=\"CONTENT\",\"application/json\"\r"));
       Serial1.readString();
-      // WARNING!!!  YOU MUST CHANGE the secret-key otherwise your location data will be sent to my JSON account!
+      // WARNING!!!  YOU MUST CHANGE the secret-key otherwise your location info will be sent to my JSON account!
       Serial1.print(F("AT+HTTPPARA=\"USERDATA\",\"secret-key: $2a$10$/4cwS1j8JzAgdbYKEDbeM.x19a0UM5C612PtEvoBv.hqtGagcY.DG\\r\\nprivate: true\"\r"));
       Serial1.readString();
       Serial1.print(F("AT+HTTPDATA="));
@@ -298,7 +319,17 @@ void locInfo(byte save) {
       display.display();
       delay(2000);
     }
+    else if (save == 3) {
+      s = F("api.openweathermap.org/data/2.5/weather?lon=");
+      s += data[0];
+      s += F("&lat=");
+      s += data[1];
+      s += F("&units=metric&appid=0a3456488cb52d167293ee9ca1f00539"); // Please change the App id to your API key
+      return s;
+    }
   }
+  s = "";
+  return s;
 }
 
 void netInfo() {
@@ -309,7 +340,8 @@ void netInfo() {
   display.clearDisplay();
   display.println(F("Getting\nnetwork info"));
   display.display();
-  String data[2], network;
+  const String data[2];
+  String network;
   do {
     Serial1.print(F("AT+COPS?\r"));
     network = Serial1.readString();
@@ -331,7 +363,7 @@ void netInfo() {
     else
       quality = "Excellent " + quality;
     Serial1.print(F("AT+CCLK?\r"));
-    String s = Serial1.readString();
+    const String s = Serial1.readString();
     char am_pm[] = "AM";
     byte hrs = 12;
     data[0] = s.substring(s.indexOf(F("\"")) + 1, s.indexOf(F(",")));
@@ -569,7 +601,7 @@ void pwrDown() {
   sleep_mode();
   sleep_disable();
   power_all_enable();
-  MENU_LENGTH =  12;
+  MENU_LENGTH =  13;
   display.begin();
   digitalWrite(lcdBL, LOW);
   startMillis = currentMillis = millis();
@@ -637,8 +669,7 @@ void savePower() {
   power_adc_disable();
   ACSR |= (1 << ACD); // disable Analog comparator, saves 4 uA
   power_usart0_disable();
-  SPCR = 0;
-  power_spi_disable();
+  power_usart1_disable();
   power_twi_disable();
   power_timer0_disable();  // Do not disable if you need millis()!!!
   power_timer1_disable();
