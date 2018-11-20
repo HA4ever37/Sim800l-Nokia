@@ -4,7 +4,7 @@ Utilizing functions of Sim800L module beyond call and sms.
 Features:
 * Request a text file from a URL and display the result on screen
 * Show network operator info (name, signal strength, network date & network time) 
-* Show your approximate Location a.k.a LBS information (date, time, Llatitude, and longitude)
+* Show your approximate Location a.k.a LBS information (date, time, latitude, and longitude)
 * Save (to eeprom) and retrive last saved location info
 * Upload your location info to a JSON server (jsonbin.io)
 * Scheduled location uploads (every 6 hours by default)
