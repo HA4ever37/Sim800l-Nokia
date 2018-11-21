@@ -668,8 +668,11 @@ void savePower() {
   ADCSRA = 0;
   power_adc_disable();
   ACSR |= (1 << ACD); // disable Analog comparator, saves 4 uA
+  DIDR0 = 0x3F; //Disable digital input buffers on all ADC0-ADC5 pins
+  DIDR1 = (1 << AIN1D) | (1 << AIN0D);
   power_usart0_disable();
   power_usart1_disable();
+  power_spi_disable();
   power_twi_disable();
   power_timer0_disable();  // Do not disable if you need millis()!!!
   power_timer1_disable();
