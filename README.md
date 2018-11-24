@@ -4,15 +4,15 @@ Utilizing functions of Sim800l module beyond call and sms.
 Features:
 * Request a text file from a URL and display the result on screen
 * Show network operator info (name, signal strength, network date & network time) 
-* Show your approximate Location a.k.a LBS information (date, time, latitude, and longitude)
+* Show your approximate location a.k.a LBS information (date, time, latitude, and longitude)
 * Save (to eeprom) and retrive last saved location info
 * Upload your location info to a JSON server (jsonbin.io)
 * Scheduled location uploads (every 6 hours by default)
 * Show weather info of your current location (using OpenWeatherMap API & LBS)
-* Serial debugging a.k.a. SerialPassthrough
+* Serial debugging (SerialPassthrough)
 * Autosleep when idle after a specific time (30 senconds by default)
-* Advanced Sleep & Wake-up functions to save power (consumption ≈ 6 mW during deep sleep)
-* Simple menu to navigate 
+* Advanced sleep & wake up functions to minimize power consumption (≈ 6 mW during deep sleep)
+* Simple menu to navigate (Nokia Style)
 * Optimized SRAM usage (more than 50% is available for local variables)
 
 Future features:
