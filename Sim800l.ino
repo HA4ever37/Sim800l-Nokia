@@ -115,8 +115,10 @@ void loop() {
     }
     else if (menuPos == 2) {
       const String s = openURL(locInfo(3), false);
+      String weather = s.substring(s.indexOf(F("description\":\"")) + 14, s.indexOf(F("\",\"icon")));
+      weather[0] = toupper(weather[0]);
       display.clearDisplay();
-      display.println(s.substring(s.indexOf(F("description\":\"")) + 14, s.indexOf(F("\",\"icon"))));
+      display.println(weather);
       display.print(F("Temp:"));
       display.print(s.substring(s.indexOf(F("temp\":")) + 6, s.indexOf(F(",\"pressure"))));
       display.println(F(" C"));
