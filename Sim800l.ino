@@ -116,20 +116,24 @@ void loop() {
     else if (menuPos == 2) {
       const String s = openURL(locInfo(3), false);
       String weather = s.substring(s.indexOf(F("description\":\"")) + 14, s.indexOf(F("\",\"icon")));
+      const byte temp = s.indexOf(F("temp\":")) + 6;
+      const byte min_t = s.indexOf(F("p_min\":")) + 7;
+      const byte max_t = s.indexOf(F("p_max\":")) + 7;
+      const byte hum = s.indexOf(F("humidity\":")) + 10;
       weather[0] = toupper(weather[0]);
       display.clearDisplay();
       display.println(weather);
       display.print(F("Temp:"));
-      display.print(s.substring(s.indexOf(F("temp\":")) + 6, s.indexOf(F(",\"pressure"))));
+      display.print(s.substring(temp, temp + 4 ));
       display.println(F(" C"));
       display.print(F("Min:"));
-      display.print(s.substring(s.indexOf(F("p_min\":")) + 7, s.indexOf(F(",\"temp_ma"))));
+      display.print(s.substring(min_t, min_t + 4));
       display.println(F(" C"));
       display.print(F("Max:"));
-      display.print(s.substring(s.indexOf(F("p_max\":")) + 7, s.indexOf(F("},\"vis"))));
+      display.print(s.substring(max_t, max_t + 4));
       display.println(F(" C"));
       display.print(F("Humidity:"));
-      display.print(s.substring(s.indexOf(F("humidity\":")) + 10, s.indexOf(F(",\"temp_"))));
+      display.print(s.substring(hum, hum + 2));
       display.println(F("%"));
       display.print(F("Wind:"));
       display.print(s.substring(s.indexOf(F("speed\":")) + 7, s.indexOf(F(",\"deg"))));
