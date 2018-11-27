@@ -24,7 +24,7 @@ const unsigned long period PROGMEM = 30000; // The value is a number in millisec
 bool GPRSCon, isItSleep, exitBool;
 byte menuPos, menuScreen, markerPos, menuStartAt;
 const char* const menu[14] PROGMEM  = {"URL Request", "Network Info", "Weather Info", "Location Info", "Save Location",
-                                       "Last Saved" , "Send Location", "Auto Upload", "Connect", "Disconnect",
+                                       "Last Saved" , "Upload Loc", "Auto Upload", "Connect", "Disconnect",
                                        "Light Switch", "Power Down", "Reset Sim800L", "Debug Mode"
                                       };
 byte MENU_LENGTH =  sizeof(menu) / sizeof(menu[0]);
