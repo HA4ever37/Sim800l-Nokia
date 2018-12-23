@@ -8,8 +8,11 @@ Features:
 * Save (to eeprom) and retrive last saved location info
 * Upload your location info to a JSON server (jsonbin.io)
 * Scheduled location uploads (every 6 hours by default)
-* Show weather info of your current location (using OpenWeatherMap API & LBS)
-* Serial debugging (SerialPassthrough)
+* Show weather info of your current location (using OpenWeatherMap API & LBS) including:
+  * Current temperature + Min & Max temp (in Celsius)
+  * Humitiy level (in percentage)
+  * Wind speed (in Meters per Second)
+* Serial debugging a.k.a. SerialPassthrough
 * Autosleep when idle after a specific time (30 senconds by default)
 * Advanced sleep & wake up functions to minimize power consumption
 * Simple menu to navigate (Nokia Style)
