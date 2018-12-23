@@ -6,7 +6,9 @@ Features:
 * Show network operator info (name, signal strength, network date & network time) 
 * Show your approximate location a.k.a LBS information (date, time, latitude, and longitude). Please note that the date and time are based on GMT time
 * Save (to eeprom) and retrive last saved location info (date, time, latitude, and longitude)
-* Upload your location info to a JSON server (jsonbin.io)
+* Upload your location info to a JSON server (jsonbin.io) including:
+ * Google Maps link of your location
+ * GMT date and time of the upload entry
 * Scheduled location uploads (every 6 hours by default)
 * Show weather info of your current location (using OpenWeatherMap API & LBS) including:
   * Current temperature + Min & Max temp (in Celsius)
