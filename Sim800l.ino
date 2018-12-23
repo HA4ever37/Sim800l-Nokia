@@ -7,7 +7,7 @@
 
 #define lcdBL 5         // LCD backlight pin
 #define resetPin 6      // Reset pin of Sim800L
-#define pwrPin A0      // controling an NPN transistor that provides 0V to GND pin of Sim800L
+#define pwrPin A0       // controling an NPN transistor that provides 0V to GND pin of Sim800L
 #define btnEnt 2
 #define btnUp 3
 #define btnDwn 7
@@ -20,10 +20,10 @@
 Adafruit_PCD8544 display = Adafruit_PCD8544(9, 8, 4);
 
 unsigned long startMillis, currentMillis;
-const unsigned long period PROGMEM = 30000; // The value is a number in milliseconds
+const unsigned long period PROGMEM = 30000; // The duration in milliseconds before the microcontroller goes to sleep
 bool GPRSCon, isItSleep, exitBool;
 byte menuPos, menuScreen, markerPos, menuStartAt;
-const char* const menu[14] PROGMEM  = {"URL Request", "Network Info", "Weather Info", "Location Info", "Save Location",
+const char* const menu[14] PROGMEM  = {"File Request", "Network Info", "Weather Info", "Location Info", "Save Location",
                                        "Last Saved" , "Upload Loc", "Auto Upload", "Connect", "Disconnect",
                                        "Light Switch", "Power Down", "Reset Sim800L", "Debug Mode"
                                       };
@@ -196,7 +196,6 @@ void loop() {
 
 void waitToReg() {
   display.clearDisplay();
-  Serial1.print(F("AT+HTTPINIT\r"));
   display.println(F("Waiting to \nregister sim \ncard"));
   display.display();
   do {
@@ -627,14 +626,14 @@ void debugMode() {
   display.println(F("Press enter to\nexit debug \nmode"));
   display.display();
   exitBool = false;
-  delay(250);
+  delay(250);   //debouncing
   attachInterrupt(digitalPinToInterrupt(btnEnt), exitLoop, FALLING);
   while (!exitBool) {
-    if (Serial.available()) {      // If anything comes in Serial (USB),
-      Serial1.write(Serial.read());   // read it and send it out Serial1 (pins 0 & 1)
+    if (Serial.available()) {
+      Serial1.write(Serial.read());
     }
-    if (Serial1.available()) {     // If anything comes in Serial1 (pins 0 & 1)
-      Serial.write(Serial1.read());   // read it and send it out Serial (USB)
+    if (Serial1.available()) {
+      Serial.write(Serial1.read());
     }
   }
 }
