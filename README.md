@@ -19,6 +19,7 @@ Features:
 * Advanced sleep & wake up functions to minimize power consumption during sleep
 * Simple menu to navigate (Nokia Style)
 * Optimized SRAM usage (more than 50% is available for local variables)
+* Backlight control
 
 Future features:
 * FM radio tuner?
