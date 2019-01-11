@@ -1,5 +1,5 @@
 # Sim800l Nokia
-Utilizing functions of Sim800l module beyond call and sms using Pro Micro (Atmega32u4) and Nokia 5110 (PCD8544) display
+Utilizing functions of Sim800l module beyond call and sms using Pro Micro or Mini (Atmega32u4/Atmega328p) and Nokia 5110 (PCD8544) display
 
 Features:
 * Request a text file from a URL and display the result on screen (support both Http and Https)
@@ -14,7 +14,7 @@ Features:
   * Current temperature + Min & Max temp (in Celsius)
   * Humitiy level (in percentage)
   * Wind speed (in Meters per Second)
-* Serial debugging a.k.a. SerialPassthrough
+* Serial debugging a.k.a. SerialPassthrough (Atmega32u4 version only)
 * Autosleep when idle after a specific time period (30 senconds by default)
 * Advanced sleep & wake up functions to minimize power consumption during sleep
 * Simple menu to navigate (Nokia Style)
@@ -29,7 +29,7 @@ Two external libraries are required: "Adafruit_GFX" and "Adafruit_PCD8544"
 
 
 Needed hardware:
-* Arduino Leonardo/Micro/Pro Micro compatible board (Atmega32u4)
+* Arduino Leonardo/Micro/Pro Micro compatible board (Atmega32u4) or Arduino Pro Mini (Atmega328p)
 * Sim800l GSM breakout board (5v tolerant)
 * Sim card with data plan
 * Nokia 3310/5110 LCD (PCD8544)
