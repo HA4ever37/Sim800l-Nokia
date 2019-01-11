@@ -1,5 +1,5 @@
 # Sim800l Nokia
-Utilizing functions of Sim800l module beyond call and sms using Pro Micro or Mini (Atmega32u4/Atmega328p) and Nokia 5110 (PCD8544) display
+Utilizing functions of Sim800l module beyond call and sms using Pro Micro or Pro Mini (Atmega32u4/Atmega328p) and Nokia 5110 (PCD8544) display
 
 Features:
 * Request a text file from a URL and display the result on screen (support both Http and Https)
