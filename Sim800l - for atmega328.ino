@@ -13,8 +13,6 @@
 #define btnDwn 7
 #define MENU_ROW_HEIGHT 11
 #define LCD_ROWS 5
-#define RXLED 17
-#define TXLED 30
 #define COUNTER 2522   // auto upload sleep counter will make the device sleep for 6 hours (COUNTER * 1.07 * 8 seconds)
 
 Adafruit_PCD8544 display = Adafruit_PCD8544(9, 8, 4);
@@ -36,11 +34,7 @@ void setup() {
   pinMode(lcdBL, OUTPUT);
   pinMode(resetPin, OUTPUT);
   pinMode(pwrPin, OUTPUT);
-  pinMode(RXLED, OUTPUT);
-  pinMode(TXLED, OUTPUT);
   digitalWrite(resetPin, HIGH);
-  digitalWrite(RXLED, HIGH);
-  digitalWrite(TXLED, HIGH);
   digitalWrite(resetPin, HIGH);
   digitalWrite(pwrPin, HIGH);
   digitalWrite(lcdBL, LOW);
@@ -84,7 +78,7 @@ void loop() {
   }
   if (isButtonDown(btnEnt) == true) {
     if (menuPos == 0) {
-      const String s = openURL(F("raw.githubusercontent.com/HA4ever37/Sim800l/master/Sim800.txt"), true); // Change the URL to your text file link
+      String s = openURL(F("raw.githubusercontent.com/HA4ever37/Sim800l/master/Sim800.txt"), true); // Change the URL to your text file link
       if (s == "ERROR" || s == "")  {
         display.clearDisplay();
         display.println(F("Bad request! \ntry again"));
@@ -92,8 +86,8 @@ void loop() {
         delay(2000);
       }
       else {
-        s = s.substring(s.indexOf(F("\r")) + 2, s.lastIndexOf(F("OK")));
-        s = s.substring(s.indexOf(F("\r")) + 2, s.length() - 1);
+        s = s.substring(s.indexOf('\r') + 2, s.lastIndexOf("OK"));
+        s = s.substring(s.indexOf('\r') + 2, s.length() - 1);
         display.clearDisplay();
         digitalWrite(lcdBL, LOW);
         /*for (byte i = 0; i < s.length(); i++) {
@@ -207,7 +201,7 @@ String openURL(String string, bool ssl) {
   display.println(F("HTTP \nIntialization\n"));
   display.display();
   if (Serial.readString().indexOf(F("OK")) == -1)
-    return;
+    return "";
   Serial.print(F("AT+HTTPPARA=\"CID\",1\r"));
   Serial.readString();
   display.print(F("Sending URL\nrequest"));
@@ -215,7 +209,7 @@ String openURL(String string, bool ssl) {
   Serial.print(F("AT+HTTPPARA=\"URL\",\""));
   Serial.print(string + "\"\r");
   if (Serial.readString().indexOf(F("OK")) == -1)
-    return;
+    return "";
   display.print(Serial.readString());
   display.display();
   display.clearDisplay();
@@ -234,7 +228,7 @@ String openURL(String string, bool ssl) {
   while (!Serial.available());
   Serial.readString();
   if (Serial.readString().indexOf(F(",200,")) != -1)
-    return;
+    return "";
   display.print(F("Downloading \ndata"));
   display.display();
   Serial.print(F("AT+HTTPREAD\r"));
@@ -255,18 +249,18 @@ String locInfo(byte save) {
   Serial.readString();
   while (!Serial.available());
   String s = Serial.readString();
-  if (s.indexOf(F(",")) == -1) {
+  if (s.indexOf(',') == -1) {
     display.println(F("Failed to \nget info!"));
     display.display();
     delay(2000);
   }
   else {
-    s = s.substring(s.indexOf(F(",")) + 1, s.indexOf(F("OK")));
+    s = s.substring(s.indexOf(',') + 1, s.indexOf("OK"));
     s.trim();
-    const String data[4];
+    String data[4];
     for (byte i = 0; i < 4; i++) {
-      data[i] = s.substring(0, s.indexOf(F(",")));
-      s = s.substring(s.indexOf(F(",")) + 1, s.length());
+      data[i] = s.substring(0, s.indexOf(','));
+      s = s.substring(s.indexOf(',') + 1, s.length());
     }
     if (save == 0) {
       display.clearDisplay();
@@ -348,7 +342,7 @@ void netInfo() {
   display.clearDisplay();
   display.println(F("Getting\nnetwork info"));
   display.display();
-  const String data[2];
+  String data[2];
   String network;
   do {
     Serial.print(F("AT+COPS?\r"));
@@ -371,11 +365,11 @@ void netInfo() {
     else
       quality = "Excellent " + quality;
     Serial.print(F("AT+CCLK?\r"));
-    const String s = Serial.readString();
+    String s = Serial.readString();
     char am_pm[] = "AM";
     byte hrs = 12;
-    data[0] = s.substring(s.indexOf(F("\"")) + 1, s.indexOf(F(",")));
-    data[1] = s.substring(s.indexOf(F(",")) + 1, s.indexOf(F("-")));
+    data[0] = s.substring(s.indexOf('\"') + 1, s.indexOf(','));
+    data[1] = s.substring(s.indexOf(',') + 1, s.indexOf('-'));
     if (data[1].substring(0, 2).toInt() > hrs) {
       am_pm[0] = 'P';
       hrs = data[1].substring(0, 2).toInt() - hrs;
