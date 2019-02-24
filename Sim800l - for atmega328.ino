@@ -13,7 +13,7 @@
 #define btnDwn 7
 #define MENU_ROW_HEIGHT 11
 #define LCD_ROWS 5
-#define COUNTER 2522   // auto upload sleep counter will make the device sleep for 6 hours (COUNTER * 1.07 * 8 seconds)
+#define COUNTER 2865   // auto upload sleep counter will make the device sleep for 6 hours (COUNTER * 1.06 * 8 seconds)
 
 Adafruit_PCD8544 display = Adafruit_PCD8544(9, 8, 4);
 
@@ -486,14 +486,21 @@ void writeEeprom(String s) {
 }
 
 void resetSim800() {
-  display.clearDisplay();
-  display.println(F("Restarting"));
-  display.display();
-  digitalWrite(resetPin, LOW);
-  delay(100);
-  digitalWrite(resetPin, HIGH);
-  GPRSCon = false;
-  delay(4000);
+  if (isItSleep) {
+    wakeUp();
+    isItSleep = false;
+  }
+  else {
+    display.clearDisplay();
+    display.println(F("Restarting"));
+    display.display();
+    digitalWrite(resetPin, LOW);
+    delay(100);
+    digitalWrite(resetPin, HIGH);
+    GPRSCon = false;
+    delay(2000);
+    waitToReg();
+  }
 }
 
 void autoUp() {
@@ -512,6 +519,7 @@ void autoUp() {
     display.display();
     display.command( PCD8544_FUNCTIONSET | PCD8544_POWERDOWN);
     digitalWrite(pwrPin, LOW);
+    savePower();
     for (int i = 0; i < COUNTER; i++)
       myWatchdogEnable (0b100001);  // 8 seconds
     //myWatchdogEnable (0b100000);  // 4
@@ -584,7 +592,6 @@ void wakeUp() {
     delay(2000);
     resetSim800();
   }
-  waitToReg();
 }
 
 void pwrDown() {
@@ -623,7 +630,6 @@ void myWatchdogEnable(const byte interval) {
   WDTCSR =  0b01000000 | interval;    // set WDIE, and appropriate delay
   set_sleep_mode (SLEEP_MODE_PWR_DOWN);
   wdt_reset();
-  savePower();
   sleep_mode();            // now goes to Sleep and waits for the interrupt
 }
 

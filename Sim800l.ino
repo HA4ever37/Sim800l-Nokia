@@ -496,14 +496,22 @@ void writeEeprom(String s) {
 }
 
 void resetSim800() {
-  display.clearDisplay();
-  display.println(F("Restarting"));
-  display.display();
-  digitalWrite(resetPin, LOW);
-  delay(100);
-  digitalWrite(resetPin, HIGH);
-  GPRSCon = false;
-  delay(4000);
+  if (isItSleep) {
+    wakeUp();
+    isItSleep = false;
+  }
+  else {
+    display.clearDisplay();
+    display.println(F("Restarting"));
+    display.display();
+    digitalWrite(resetPin, LOW);
+    delay(100);
+    digitalWrite(resetPin, HIGH);
+    GPRSCon = false;
+    delay(2000);
+    waitToReg();
+  }
+}
 }
 
 void autoUp() {
