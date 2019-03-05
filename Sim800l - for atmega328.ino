@@ -13,7 +13,7 @@
 #define btnDwn 7
 #define MENU_ROW_HEIGHT 11
 #define LCD_ROWS 5
-#define COUNTER 2865   // auto upload sleep counter will make the device sleep for 6 hours (COUNTER * 1.06 * 8 seconds)
+#define COUNTER 2550   // auto upload sleep counter will make the device sleep for 6 hours (COUNTER * 1.059 * 8 seconds)
 
 Adafruit_PCD8544 display = Adafruit_PCD8544(9, 8, 4);
 

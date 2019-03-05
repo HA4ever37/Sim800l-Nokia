@@ -512,7 +512,6 @@ void resetSim800() {
     waitToReg();
   }
 }
-}
 
 void autoUp() {
   display.clearDisplay();
